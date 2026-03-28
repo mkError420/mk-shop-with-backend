@@ -2,7 +2,7 @@
 const nextConfig = {
   /* config options here */
   experimental: {
-    optimizeCss: true,
+    optimizeCss: false,
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
   },
   compiler: {

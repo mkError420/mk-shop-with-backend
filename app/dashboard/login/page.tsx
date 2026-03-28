@@ -15,13 +15,13 @@ export default function DashboardLoginPage() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user: any) => {
+    const unsubscribe = onAuthStateChanged(auth!, (user: any) => {
       if (user) {
         setUser(user)
         router.push('/dashboard')
       }
     })
-    return () => unsubscribe()
+    return unsubscribe
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,6 +29,7 @@ export default function DashboardLoginPage() {
     setError('')
     setLoading(true)
     try {
+      await signInWithEmailAndPassword(auth!, email, password)
       await signInWithEmailAndPassword(auth, email, password)
       router.push('/dashboard')
       router.refresh()
