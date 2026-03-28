@@ -205,7 +205,7 @@ const BlogCard = ({
 
         {/* Comment Section */}
         <CommentSection
-          postId={post.id}
+          postId={String(post.id)}
           comments={comments}
           onAddComment={handleAddComment}
           onLikeComment={handleLikeComment}
@@ -330,7 +330,7 @@ const BlogCard = ({
 
           {/* Comment Section */}
           <CommentSection
-            postId={post.id}
+            postId={String(post.id)}
             comments={comments}
             onAddComment={handleAddComment}
             onLikeComment={handleLikeComment}

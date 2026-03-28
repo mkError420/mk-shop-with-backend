@@ -1,8 +1,16 @@
 import admin from 'firebase-admin'
 
-if (!admin.apps.length) {
+// Only initialize Firebase Admin if all required environment variables are present
+const shouldInitialize = () => {
+  return process.env.FIREBASE_ADMIN_PROJECT_ID && 
+         process.env.FIREBASE_ADMIN_PRIVATE_KEY && 
+         process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
+         process.env.NODE_ENV === 'production'
+}
+
+if (!admin.apps.length && shouldInitialize()) {
   const serviceAccount = {
-    type: process.env.FIREBASE_ADMIN_TYPE,
+    type: process.env.FIREBASE_ADMIN_TYPE || 'service_account',
     project_id: process.env.FIREBASE_ADMIN_PROJECT_ID,
     private_key_id: process.env.FIREBASE_ADMIN_PRIVATE_KEY_ID,
     private_key: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),

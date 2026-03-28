@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword, onAuthStateChanged, auth } from '@/lib/firebase'
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardLoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('mk.rabbani.cse@gmail.com')

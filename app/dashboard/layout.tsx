@@ -6,6 +6,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { LayoutDashboard, Package, Tag, Percent, FileText, ShoppingCart, LogOut, Menu, Ticket } from 'lucide-react'
 import { auth, onAuthStateChanged, signOut } from '@/lib/firebase'
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
