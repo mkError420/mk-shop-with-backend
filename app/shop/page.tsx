@@ -1,0 +1,543 @@
+'use client'
+
+import React, { useState, useMemo, useEffect } from 'react'
+import Container from '@/components/Container';
+import ShopHeader from '@/components/ShopHeader';
+import FilterSidebar from '@/components/FilterSidebar';
+import CategoriesSidebar from '@/components/CategoriesSidebar';
+import ProductCard from '@/components/ProductCard';
+import Pagination from '@/components/Pagination';
+import { useCategories } from '@/hooks/useCategories';
+import { api } from '@/lib/api-client';
+
+const ShopPage = () => {
+  const { categories, loading: categoriesLoading } = useCategories()
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortBy, setSortBy] = useState('featured')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(9)
+  const [products, setProducts] = useState<any[]>([])
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [banners, setBanners] = useState<any[]>([])
+  const [bannersLoading, setBannersLoading] = useState(true)
+  
+  // Debug: Log categories data
+  console.log('Categories data:', categories)
+  console.log('Categories loading:', categoriesLoading)
+  
+  // Fallback categories for testing
+  const fallbackCategories = [
+    {
+      id: 'mmbhu02jplyj1uufjg',
+      title: 'Electronics',
+      slug: 'electronics',
+      href: 'electronics',
+      icon: '',
+      subcategories: [
+        {
+          id: 'mmbhur2t2rzmhlxjvg8',
+          title: 'Smartphones & Accessories',
+          slug: 'smartphones-&-accessories',
+          href: 'smartphones-&-accessories',
+          icon: ''
+        }
+      ]
+    }
+  ]
+  
+  // Use only API categories from dashboard, fallback to hardcoded data
+  const categoriesToUse = useMemo(() => {
+    if (categories && categories.length > 0) {
+      return categories;
+    }
+    console.warn('No categories from API, using fallback data');
+    return fallbackCategories;
+  }, [categories]);
+  
+  // Debug: Log source of categories
+  console.log('Using categories from:', categories && categories.length > 0 ? 'Dashboard (API)' : 'None available')
+  console.log('Categories count:', categoriesToUse.length)
+  
+  // Filter states
+  const [selectedCategory, setSelectedCategory] = useState<string[]>(['all'])
+  const [selectedRatings, setSelectedRatings] = useState<number[]>([])
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([])
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 200000 })
+
+  // Transform categories for FilterSidebar with proper subcategory structure and real counts
+  const transformedCategories = useMemo(() => {
+    return categoriesToUse.map(cat => {
+      // Count products for main category and its subcategories
+      const mainCategoryProducts = products.filter(product => 
+        product.category?.toLowerCase() === cat.title.toLowerCase()
+      ).length
+      
+      const subcategoriesWithCounts = cat.subcategories?.map(sub => {
+        const subCategoryProducts = products.filter(product => 
+          product.category?.toLowerCase() === sub.title.toLowerCase()
+        ).length
+        return {
+          id: sub.slug, // Use slug as ID for consistency
+          name: sub.title,
+          count: subCategoryProducts
+        }
+      }) || []
+      
+      // Total count includes main category products + all subcategory products
+      const totalCount = mainCategoryProducts + subcategoriesWithCounts.reduce((sum, sub) => sum + sub.count, 0)
+      
+      return {
+        id: cat.slug, // Use slug as ID for consistency
+        name: cat.title,
+        count: totalCount,
+        subcategories: subcategoriesWithCounts
+      }
+    })
+  }, [categoriesToUse, products])
+
+  const dealTypes = [
+    { name: 'Lightning Deal', slug: 'lightning', icon: '' },
+    { name: 'Daily Deal', slug: 'daily', icon: '' }
+  ]
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        // Fetch all products first to get featured products from all categories
+        const data = await api.products.list()
+        setProducts(data)
+        
+        // Also fetch featured products to ensure we have all category products marked as featured
+        const featuredData = await api.products.list({ featured: 'true' })
+        console.log('Featured products from API:', featuredData)
+      } catch (error) {
+        console.error('Error fetching products:', error)
+        setProducts([]) // Use empty array if API fails
+      }
+    }
+    fetchProducts()
+  }, [])
+
+  // Fetch banners from API
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const data = await api.banners.list()
+        console.log('Banners fetched:', data)
+        
+        // Ensure we always have an array
+        if (Array.isArray(data)) {
+          setBanners(data)
+        } else {
+          console.warn('Banners API did not return an array, using empty array')
+          setBanners([])
+        }
+      } catch (error) {
+        console.error('Error fetching banners:', error)
+        setBanners([]) // Use empty array if API fails
+      } finally {
+        setBannersLoading(false)
+      }
+    }
+    fetchBanners()
+  }, [])
+
+  // Add refresh function for manual banner refresh
+  const refreshBanners = async () => {
+    setBannersLoading(true)
+    try {
+      const data = await api.banners.list()
+      setBanners(data)
+      console.log('Banners refreshed:', data)
+    } catch (error) {
+      console.error('Error refreshing banners:', error)
+    } finally {
+      setBannersLoading(false)
+    }
+  }
+
+  // Hero carousel data (using banners from Admin Dashboard only)
+  const heroSlides = useMemo(() => {
+    console.log('Current banners data:', banners)
+    
+    // Use banners if available, otherwise return empty array
+    if (banners.length > 0) {
+      const activeBanners = banners.filter(banner => banner.isActive).slice(0, 4)
+      console.log('Active banners:', activeBanners)
+      return activeBanners
+    }
+    
+    console.log('No banners available')
+    return []
+  }, [banners])
+
+  // Create infinite loop slides by duplicating the array
+  const infiniteSlides = useMemo(() => {
+    if (heroSlides.length === 0) return []
+    // Duplicate slides for infinite loop effect
+    return [...heroSlides, ...heroSlides]
+  }, [heroSlides])
+
+  // Auto-sliding functionality
+  useEffect(() => {
+    if (heroSlides.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
+      }, 3000) // Change slide every 3 seconds
+
+      return () => clearInterval(interval)
+    }
+  }, [heroSlides])
+
+  // Banner carousel navigation
+  const goToPreviousSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)
+  }
+
+  const goToNextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length)
+  }
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index % heroSlides.length)
+  }
+
+  // Filter and sort products
+  const filteredAndSortedProducts = useMemo(() => {
+    console.log('=== FILTERING DEBUG ===')
+    console.log('Total products available:', products.length)
+    console.log('Selected categories:', selectedCategory)
+    console.log('Search term:', searchTerm)
+    console.log('Price range:', priceRange)
+    
+    // Simple filter first - just check if products exist
+    if (products.length === 0) {
+      console.log('No products to filter')
+      return []
+    }
+    
+    let filtered = products.filter(product => {
+      console.log('Filtering product:', product.name, 'category:', product.category)
+      
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      // Enhanced category filtering to handle both main categories and subcategories
+      let matchesCategory = selectedCategory.includes('all')
+      console.log('Product:', product.name, 'matchesCategory (all check):', matchesCategory, 'selectedCategory:', selectedCategory)
+      
+      if (!matchesCategory) {
+        matchesCategory = selectedCategory.some(selectedCatId => {
+          console.log('Checking category ID:', selectedCatId)
+          
+          // Find the selected category by ID in our transformed categories
+          const selectedMainCat = transformedCategories.find(cat => cat.id === selectedCatId)
+          console.log('Found main category:', selectedMainCat)
+          
+          if (selectedMainCat) {
+            // Check if product matches main category name OR any subcategory name
+            const productCategory = product.category?.toLowerCase() || ''
+            const mainCategoryName = selectedMainCat.name.toLowerCase()
+            
+            // Exact main category match
+            const mainMatch = productCategory === mainCategoryName
+            
+            // Check subcategory matches
+            const subMatch = selectedMainCat.subcategories?.some(sub => 
+              productCategory === sub.name.toLowerCase()
+            ) || false
+            
+            // Also check if product category contains main category name (for hierarchical matching)
+            const containsMatch = productCategory.includes(mainCategoryName) || mainCategoryName.includes(productCategory)
+            
+            console.log('Main category match:', mainMatch, 'subcategory match:', subMatch, 'contains match:', containsMatch, 'product category:', productCategory, 'main category name:', mainCategoryName)
+            return mainMatch || subMatch || containsMatch
+          }
+          
+          // Also check if the selected category is a subcategory
+          const selectedSubCat = transformedCategories.flatMap(cat => cat.subcategories || [])
+            .find(sub => sub.id === selectedCatId)
+          console.log('Found subcategory:', selectedSubCat)
+          if (selectedSubCat) {
+            const subMatch = product.category?.toLowerCase() === selectedSubCat.name.toLowerCase()
+            console.log('Direct subcategory match:', subMatch, 'product category:', product.category, 'subcategory name:', selectedSubCat.name)
+            return subMatch
+          }
+          
+          return false
+        })
+      }
+      
+      const matchesPriceRange = product.price >= priceRange.min && product.price <= priceRange.max
+      const matchesRatings = selectedRatings.length === 0 || selectedRatings.includes(Math.floor(product.rating || 0))
+      const matchesSizes = selectedSizes.length === 0 || selectedSizes.includes(product.size || '')
+      
+      const finalMatch = matchesSearch && matchesCategory && matchesPriceRange && matchesRatings && matchesSizes
+      console.log('Product:', product.name, 'final match result:', finalMatch, 'matchesSearch:', matchesSearch, 'matchesCategory:', matchesCategory, 'matchesPriceRange:', matchesPriceRange)
+      return finalMatch
+    })
+
+    console.log('Filtered products count:', filtered.length)
+
+    // Sort products
+    switch (sortBy) {
+      case 'price-low':
+        return filtered.sort((a, b) => a.price - b.price)
+      case 'price-high':
+        return filtered.sort((a, b) => b.price - a.price)
+      case 'name-asc':
+        return filtered.sort((a, b) => a.name.localeCompare(b.name))
+      case 'name-desc':
+        return filtered.sort((a, b) => b.name.localeCompare(a.name))
+      case 'rating':
+        return filtered.sort((a, b) => b.rating - a.rating)
+      case 'featured':
+        // Sort by featured status first, then by other criteria
+        return filtered.sort((a, b) => {
+          const aFeatured = a.featured ? 1 : 0
+          const bFeatured = b.featured ? 1 : 0
+          if (aFeatured !== bFeatured) {
+            return bFeatured - aFeatured // Featured products first
+          }
+          return 0 // Maintain original order for same featured status
+        })
+      default:
+        return filtered
+    }
+  }, [products, selectedCategory, searchTerm, sortBy, priceRange, selectedRatings, selectedSizes])
+
+  // Pagination
+  const totalProducts = filteredAndSortedProducts.length
+  const totalPages = Math.ceil(totalProducts / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex)
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Banner Carousel */}
+      <div className="relative w-full overflow-hidden" style={{ height: 'clamp(20rem, 45vw, 28rem)' }}>
+        {bannersLoading ? (
+          <div className="relative w-full bg-gray-200 animate-pulse" style={{ height: 'clamp(20rem, 45vw, 28rem)' }}>
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-300/90 to-gray-400/80 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="h-8 bg-gray-400 rounded w-3/4 mx-auto mb-4"></div>
+                <div className="h-4 bg-gray-400 rounded w-1/2 mx-auto mb-2"></div>
+                <div className="h-3 bg-gray-400 rounded w-2/3 mx-auto"></div>
+              </div>
+            </div>
+          </div>
+        ) : heroSlides.length > 0 ? (
+          <>
+            <div className="relative w-full" style={{ height: 'clamp(20rem, 45vw, 28rem)' }}>
+              <div 
+                className="flex transition-transform duration-500 ease-in-out h-full"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+              >
+                {infiniteSlides.map((slide, index) => (
+                  <div
+                    key={`${slide.id}-${index}`}
+                    className="w-full flex-shrink-0"
+                  >
+                    <div className="relative h-full flex flex-col max-md:flex-row md:flex-row lg:flex-row">
+                      {/* Content Side */}
+                      <div className={`w-full max-md:w-2/5 md:w-1/3 lg:w-1/5 xl:w-1/4 h-full max-md:h-auto md:h-auto lg:h-auto xl:h-auto bg-gradient-to-r ${slide.backgroundColor} ${slide.gradient} flex items-center justify-center px-3 max-md:px-2 md:px-4 lg:px-4 xl:px-6 py-6 max-md:py-0 md:py-0 lg:py-0 xl:py-0`}>
+                        <div className="text-center text-white max-w-full">
+                          <h2 className="text-sm max-md:text-xs md:text-base lg:text-sm xl:text-lg font-bold mb-1 max-md:mb-1 md:mb-2 lg:mb-2">{slide.title}</h2>
+                          <p className="text-xs max-md:text-xs md:text-sm lg:text-xs xl:text-sm mb-2 max-md:mb-1 md:mb-2 lg:mb-2">{slide.subtitle}</p>
+                          <p className="text-xs max-md:text-xs md:text-xs lg:text-xs xl:text-sm mb-3 max-md:mb-2 md:mb-3 lg:mb-3 opacity-90 hidden xl:block">{slide.description}</p>
+                          <button
+                            onClick={() => {
+                              // Redirect to deals page
+                              window.location.href = '/deals'
+                            }}
+                            className="bg-white text-shop_dark_green px-2 py-1 max-md:px-2 max-md:py-1 md:px-3 md:py-2 lg:px-3 lg:py-2 xl:px-4 xl:py-2 rounded-lg hover:bg-shop_light_green transition-all duration-200 font-medium hover:scale-105 hover:shadow-lg text-xs max-md:text-xs md:text-xs lg:text-xs xl:text-sm"
+                          >
+                            Shop Now
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Image Side */}
+                      <div className="w-full max-md:w-3/5 md:w-2/3 lg:w-4/5 xl:w-3/4 h-full max-md:h-auto md:h-auto lg:h-auto xl:h-auto relative min-h-[150px] max-md:min-h-[120px] md:min-h-[200px] lg:min-h-[220px] xl:min-h-[250px]">
+                        <img 
+                          src={slide.image} 
+                          alt={slide.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails
+                            const target = e.target as HTMLImageElement
+                            target.src = '/api/placeholder/1920/600'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Empty State */
+          <div className="relative w-full bg-gradient-to-r from-shop_dark_green to-shop_light_green" style={{ height: 'clamp(20rem, 45vw, 28rem)' }}>
+            <div className="absolute inset-0 flex items-center justify-center px-8">
+              <div className="text-center text-white">
+                <h2 className="text-2xl max-md:text-xl md:text-2xl lg:text-3xl font-bold mb-4">Welcome to Our Shop</h2>
+                <p className="text-base max-md:text-sm md:text-base lg:text-lg mb-6">Discover amazing products and great deals</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-white text-shop_dark_green px-6 py-2 max-md:px-4 max-md:py-2 md:px-6 md:py-2 lg:px-8 lg:py-3 rounded-lg hover:bg-shop_light_green transition-colors duration-200 font-medium text-sm max-md:text-xs md:text-sm lg:text-base"
+                >
+                  Refresh Banners
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Container className="py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Categories Sidebar */}
+          <aside className="w-full lg:w-80 lg:flex-shrink-0">
+            <CategoriesSidebar
+              categories={categoriesToUse}
+              selectedCategories={selectedCategory}
+              onCategorySelect={(categoryId: string) => {
+                setSelectedCategory([categoryId])
+                setCurrentPage(1)
+              }}
+              products={products}
+            />
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1">
+            {/* Products Section with Filters */}
+            <div>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2"></h2>
+                  
+                </div>
+                
+                {/* Mobile Filter Toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="lg:hidden flex items-center gap-2 bg-shop_dark_green text-white px-4 py-2 rounded-lg hover:bg-shop_light_green transition-colors duration-200"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Filters
+                </button>
+              </div>
+              
+              {/* Mobile Filter Sidebar */}
+              {showFilters && (
+                <div className="lg:hidden mb-6">
+                  <FilterSidebar
+                    showFilters={showFilters}
+                    setShowFilters={setShowFilters}
+                    categories={transformedCategories}
+                    dealTypes={dealTypes}
+                    selectedCategories={selectedCategory}
+                    setSelectedCategories={setSelectedCategory}
+                    selectedDealType="all"
+                    setSelectedDealType={() => {}}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
+                    selectedRatings={selectedRatings}
+                    setSelectedRatings={setSelectedRatings}
+                    selectedSizes={selectedSizes}
+                    setSelectedSizes={setSelectedSizes}
+                    priceRange={priceRange}
+                    setPriceRange={setPriceRange}
+                  />
+                </div>
+              )}
+
+              {/* Desktop Header */}
+              <div className="hidden lg:flex items-center justify-between mb-6">
+                <ShopHeader 
+                  totalProducts={filteredAndSortedProducts.length}
+                  viewMode={viewMode}
+                  setViewMode={setViewMode}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  showFilters={showFilters}
+                  setShowFilters={setShowFilters}
+                />
+              </div>
+
+              {/* Mobile Search */}
+              <div className="lg:hidden mb-6">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-shop_dark_green"
+                  />
+                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              
+              {/* Products Grid */}
+              {filteredAndSortedProducts.length > 0 ? (
+                <div className={`grid gap-6 ${
+                  viewMode === 'grid' 
+                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                    : 'grid-cols-1'
+                }`}>
+                  {currentProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      viewMode={viewMode}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="text-gray-400 text-6xl mb-4">🔍</div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    No products found
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Try adjusting your search or filters to find what you're looking for.
+                  </p>
+                  <button 
+                    onClick={() => setSearchTerm('')}
+                    className="bg-shop_dark_green text-white px-6 py-2 rounded-lg hover:bg-shop_light_green transition-colors"
+                  >
+                    Clear Search
+                  </button>
+                </div>
+              )}
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={totalProducts}
+                itemsPerPage={itemsPerPage}
+              />
+            </div>
+          </main>
+        </div>
+      </Container>
+    </div>
+  )
+}
+
+export default ShopPage

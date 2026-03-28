@@ -1,0 +1,586 @@
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
+import { 
+  Star, 
+  Heart, 
+  ShoppingCart, 
+  ArrowLeft, 
+  Truck, 
+  Shield, 
+  RefreshCw,
+  Minus,
+  Plus,
+  Check,
+  Clock,
+  X
+} from 'lucide-react'
+import { useCart } from '@/contexts/CartContext'
+import { useSlideCart } from '@/contexts/SlideCartContext'
+
+const getAutoRenewedEndTime = (originalEndTime: string): string => {
+  const endTime = new Date(originalEndTime)
+  const now = new Date()
+  if (endTime <= now) return new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
+  return originalEndTime
+}
+
+const fallbackDeals: any[] = [
+  { id: 2, title: 'Lightning Deal: Smart Watch Pro', originalPrice: 349.99, dealPrice: 199.99, discount: 43, image: '/api/placeholder/400/300', category: 'Electronics', dealType: 'lightning', endTime: new Date(Date.now() + 7*24*60*60*1000).toISOString(), stock: 8, sold: 42, rating: 4.8, reviews: 89, description: 'Advanced smartwatch', features: ['GPS', 'Heart Rate'], freeShipping: true }
+]
+
+const DealDetailPage = () => {
+  const params = useParams()
+  const id = params.id as string
+  const { addToCart } = useCart()
+  const { openSlideCart } = useSlideCart()
+  
+  const [deal, setDeal] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [quantity, setQuantity] = useState(1)
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [isAddedToCart, setIsAddedToCart] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [lightboxImage, setLightboxImage] = useState('')
+
+  useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t) }, [])
+  useEffect(() => {
+    fetch(`/api/deals/${id}`).then(r => r.json()).then(d => {
+      if (d?.data) {
+        console.log('Deal data loaded:', d.data)
+        console.log('Deal image:', d.data.image)
+        console.log('Deal images:', d.data.images)
+        setDeal(d.data)
+      }
+      else setDeal(fallbackDeals.find((d: any) => String(d.id) === id))
+    }).catch(() => setDeal(fallbackDeals.find((d: any) => String(d.id) === id))).finally(() => setLoading(false))
+  }, [id])
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full" /></div>
+  if (!deal) {
+    return (
+      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+        <div className='text-center'>
+          <h2 className='text-2xl font-semibold text-gray-900 mb-4'>Deal Not Found</h2>
+          <p className='text-gray-600 mb-8'>The deal you're looking for doesn't exist or has expired.</p>
+          <Link 
+            href='/deals'
+            className='inline-flex items-center bg-red-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-red-700 hover:shadow-lg transition-all duration-300'
+          >
+            <ArrowLeft className='w-5 h-5 mr-2' />
+            Back to Deals
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const getTimeLeft = (endTime: string, currentTime: Date) => {
+    const renewedEndTime = getAutoRenewedEndTime(endTime)
+    const end = new Date(renewedEndTime).getTime()
+    const now = currentTime.getTime()
+    const difference = end - now
+
+    if (difference <= 0) {
+      return { expired: true, text: 'Expired' }
+    }
+
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((difference % (1000 * 60)) / 1000)
+
+    if (days > 0) {
+      return { expired: false, text: `${days}d ${hours}h ${minutes}m` }
+    } else if (hours > 0) {
+      return { expired: false, text: `${hours}h ${minutes}m ${seconds}s` }
+    } else if (minutes > 0) {
+      return { expired: false, text: `${minutes}m ${seconds}s` }
+    } else {
+      return { expired: false, text: `${seconds}s` }
+    }
+  }
+
+  const timeLeft = getTimeLeft(deal.endTime, currentTime)
+  const stockPercentage = (deal.sold / (deal.sold + deal.stock)) * 100
+  const isUrgent = !timeLeft.expired && (
+    deal.dealType === 'lightning' ||
+    stockPercentage > 80 ||
+    (new Date(deal.endTime).getTime() - currentTime.getTime() < 2 * 60 * 60 * 1000)
+  )
+
+  const handleAddToCart = () => {
+    const dealToAdd = {
+      ...deal,
+      quantity: quantity
+    }
+    addToCart(dealToAdd, 'deal')
+    openSlideCart()
+    setIsAddedToCart(true)
+    setTimeout(() => setIsAddedToCart(false), 2000)
+  }
+
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity >= 1 && newQuantity <= deal.stock) {
+      setQuantity(newQuantity)
+    }
+  }
+
+  const getDealTypeBadge = () => {
+    switch (deal.dealType) {
+      case 'lightning':
+        return { color: 'bg-purple-500', text: 'Lightning', icon: '🌩' }
+      case 'daily':
+        return { color: 'bg-blue-500', text: 'Daily Deal', icon: '📅' }
+      default:
+        return { color: 'bg-red-500', text: 'Hot Deal', icon: '🔥' }
+    }
+  }
+
+  const dealBadge = getDealTypeBadge()
+
+  return (
+    <div className='min-h-screen bg-gray-50 py-8'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        {/* Breadcrumb */}
+        <nav className='flex items-center space-x-2 text-sm text-gray-500 mb-8'>
+          <Link href='/' className='hover:text-gray-900'>Home</Link>
+          <span>/</span>
+          <Link href='/deals' className='hover:text-gray-900'>Deals</Link>
+          <span>/</span>
+          <span className='text-gray-900'>{deal.title}</span>
+        </nav>
+
+        <div className='grid lg:grid-cols-2 gap-12'>
+          {/* Deal Images */}
+          <div className='space-y-4'>
+            {/* Main Image */}
+            <div className='relative overflow-hidden rounded-xl bg-gray-100 aspect-square'>
+              {dealBadge && (
+                <div className='absolute top-4 left-4 z-10'>
+                  <span className={`${dealBadge.color} text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1`}>
+                    <span>{dealBadge.icon}</span>
+                    {dealBadge.text}
+                  </span>
+                </div>
+              )}
+              
+              {isUrgent && (
+                <div className='absolute top-4 right-4 z-10'>
+                  <span className='bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse'>
+                    Ending Soon!
+                  </span>
+                </div>
+              )}
+
+              {selectedImage === 0 ? (
+                // Main image
+                deal?.image && deal.image !== '/api/placeholder/400/300' ? (
+                  <div 
+                    className='relative w-full h-full cursor-pointer group'
+                    onClick={() => {
+                      const imageSrc = deal.image.startsWith('http') ? deal.image : (deal.image.startsWith('/images/') ? deal.image : `/images/${deal.image}`)
+                      console.log('Main image clicked, src:', imageSrc)
+                      setLightboxImage(imageSrc)
+                      setIsLightboxOpen(true)
+                    }}
+                  >
+                    <Image
+                      src={deal.image.startsWith('http') ? deal.image : (deal.image.startsWith('/images/') ? deal.image : `/images/${deal.image}`)}
+                      alt={deal.title}
+                      fill
+                      className='object-cover transition-transform duration-300 group-hover:scale-110'
+                      sizes='(max-width: 1024px) 100vw, 50vw'
+                      onLoad={() => console.log('Main image loaded successfully')}
+                      onError={(e) => {
+                        console.log('Main image failed to load, using fallback')
+                        const target = e.target as HTMLImageElement;
+                        const fallbackImages = [
+                          '/images/products/product_1.png',
+                          '/images/products/product_2.jpg',
+                          '/images/products/product_3.png',
+                          '/images/products/product_4.png',
+                          '/images/products/product_5.png'
+                        ];
+                        const randomFallback = fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
+                        console.log('Setting fallback to:', randomFallback)
+                        target.src = randomFallback;
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className='w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center'>
+                    <div className='text-gray-400 text-center'>
+                      <div className='w-32 h-32 bg-gray-300 rounded-lg mx-auto mb-4'></div>
+                      <p className='text-sm'>No Image Available</p>
+                    </div>
+                  </div>
+                )
+              ) : (
+                // Additional images from gallery
+                deal?.images?.[selectedImage - 1] && deal.images[selectedImage - 1] !== '/api/placeholder/400/300' ? (
+                  <div 
+                    className='relative w-full h-full cursor-pointer group'
+                    onClick={() => {
+                      const imageSrc = deal.images[selectedImage - 1].startsWith('http') ? deal.images[selectedImage - 1] : (deal.images[selectedImage - 1].startsWith('/images/') ? deal.images[selectedImage - 1] : `/images/${deal.images[selectedImage - 1]}`)
+                      console.log('Gallery image clicked, index:', selectedImage - 1, 'src:', imageSrc)
+                      setLightboxImage(imageSrc)
+                      setIsLightboxOpen(true)
+                    }}
+                  >
+                    <Image
+                      src={deal.images[selectedImage - 1].startsWith('http') ? deal.images[selectedImage - 1] : (deal.images[selectedImage - 1].startsWith('/images/') ? deal.images[selectedImage - 1] : `/images/${deal.images[selectedImage - 1]}`)}
+                      alt={`${deal.title} - Image ${selectedImage}`}
+                      fill
+                      className='object-cover transition-transform duration-300 group-hover:scale-110'
+                      sizes='(max-width: 1024px) 100vw, 50vw'
+                      onLoad={() => console.log('Gallery image loaded successfully, index:', selectedImage - 1)}
+                      onError={(e) => {
+                        console.log('Gallery image failed to load, index:', selectedImage - 1, 'using fallback')
+                        const target = e.target as HTMLImageElement;
+                        const fallbackImages = [
+                          '/images/products/product_1.png',
+                          '/images/products/product_2.jpg',
+                          '/images/products/product_3.png',
+                          '/images/products/product_4.png',
+                          '/images/products/product_5.png'
+                        ];
+                        const randomFallback = fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
+                        console.log('Setting gallery fallback to:', randomFallback)
+                        target.src = randomFallback;
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className='w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center'>
+                    <div className='text-gray-400 text-center'>
+                      <div className='w-32 h-32 bg-gray-300 rounded-lg mx-auto mb-4'></div>
+                      <p className='text-sm'>Image {selectedImage} Not Available</p>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Discount Overlay */}
+              <div className='absolute top-4 right-4 bg-red-600 text-white rounded-lg px-3 py-2 text-center'>
+                <div className='text-2xl font-bold'>-{deal.discount}%</div>
+                <div className='text-xs'>OFF</div>
+              </div>
+            </div>
+
+            {/* Thumbnail Images */}
+            <div className='grid grid-cols-5 gap-2'>
+              {/* Main image thumbnail */}
+              <button
+                onClick={() => {
+                    console.log('Main thumbnail clicked')
+                    setSelectedImage(0)
+                  }}
+                className={`relative overflow-hidden rounded-lg bg-gray-100 aspect-square border-2 transition-all duration-200 ${
+                  selectedImage === 0 ? 'border-red-600' : 'border-gray-200'
+                }`}
+              >
+                {deal?.image && deal.image !== '/api/placeholder/400/300' ? (
+                  <img
+                    src={deal.image.startsWith('http') ? deal.image : (deal.image.startsWith('/images/') ? deal.image : `/images/${deal.image}`)}
+                    alt={deal.title}
+                    className='w-full h-full object-cover'
+                    onLoad={() => console.log('Main thumbnail loaded:', deal.image)}
+                    onError={(e) => {
+                      console.log('Main thumbnail failed to load:', deal.image)
+                    }}
+                  />
+                ) : (
+                  <div className='w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center'>
+                    <div className='w-12 h-12 bg-gray-300 rounded'></div>
+                  </div>
+                )}
+              </button>
+              
+              {/* Additional images thumbnails */}
+              {deal?.images?.slice(0, 4).map((image: string, index: number) => (
+                <button
+                  key={index + 1}
+                  onClick={() => {
+                    console.log('Gallery thumbnail clicked:', index + 1, 'image:', image)
+                    setSelectedImage(index + 1)
+                  }}
+                  className={`relative overflow-hidden rounded-lg bg-gray-100 aspect-square border-2 transition-all duration-200 ${
+                    selectedImage === index + 1 ? 'border-red-600' : 'border-gray-200'
+                  }`}
+                >
+                  {image && image !== '/api/placeholder/400/300' ? (
+                    <img
+                      src={image.startsWith('http') ? image : (image.startsWith('/images/') ? image : `/images/${image}`)}
+                      alt={`${deal.title} - Image ${index + 1}`}
+                      className='w-full h-full object-cover'
+                      onLoad={() => console.log('Gallery thumbnail loaded:', index + 1, image)}
+                      onError={(e) => {
+                        console.log('Gallery thumbnail failed to load:', index + 1, image)
+                        const target = e.target as HTMLImageElement;
+                        const sampleImages = [
+                          '/images/products/product_1.png',
+                          '/images/products/product_2.jpg',
+                          '/images/products/product_3.png',
+                          '/images/products/product_4.png',
+                          '/images/products/product_5.png'
+                        ];
+                        const randomImage = sampleImages[Math.floor(Math.random() * sampleImages.length)];
+                        console.log('Setting gallery thumbnail fallback to:', randomImage)
+                        target.src = randomImage;
+                      }}
+                    />
+                  ) : (
+                    <div className='w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center'>
+                      <div className='w-12 h-12 bg-gray-300 rounded'></div>
+                    </div>
+                  )}
+                </button>
+              ))}
+              
+              {/* Empty thumbnails if less than 4 additional images */}
+              {[...Array(Math.max(0, 4 - (deal?.images?.length || 0)))].map((_, index) => (
+                <div
+                  key={`empty-${index}`}
+                  className='relative overflow-hidden rounded-lg bg-gray-100 aspect-square border-2 border-gray-200'
+                >
+                  <div className='w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center'>
+                    <div className='w-12 h-12 bg-gray-300 rounded'></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Deal Info */}
+          <div className='space-y-6'>
+            {/* Header */}
+            <div>
+              <div className='text-sm text-red-600 font-semibold mb-2 uppercase tracking-wide'>
+                {deal.category}
+              </div>
+              <h1 className='text-3xl font-bold text-gray-900 mb-4'>{deal.title}</h1>
+              
+              {/* Rating */}
+              <div className='flex items-center gap-4 mb-4'>
+                <div className='flex items-center'>
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${
+                        deal.rating && i < Math.floor(deal.rating)
+                          ? 'text-yellow-400 fill-current'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className='text-sm text-gray-600'>
+                  {deal.rating} ({deal.reviews} reviews)
+                </span>
+              </div>
+            </div>
+
+            {/* Price */}
+            <div className='flex items-center gap-4'>
+              <span className='text-3xl font-bold text-red-600'>
+                ৳{deal.dealPrice}
+              </span>
+              <span className='text-xl text-gray-400 line-through'>
+                ৳{deal.originalPrice}
+              </span>
+              <span className='text-lg text-green-600 font-semibold'>
+                You save ৳{(deal.originalPrice - deal.dealPrice).toFixed(2)}
+              </span>
+            </div>
+
+            {/* Countdown Timer */}
+            <div className={`
+              flex items-center justify-between p-4 rounded-lg
+              ${timeLeft.expired 
+                ? 'bg-gray-100 text-gray-600' 
+                : isUrgent 
+                  ? 'bg-red-100 text-red-700' 
+                  : 'bg-orange-100 text-orange-700'
+              }
+            `}>
+              <div className='flex items-center gap-2'>
+                <Clock className='w-5 h-5' />
+                <span className='font-semibold'>
+                  {timeLeft.expired ? 'Deal Ended' : `Ends in: ${timeLeft.text}`}
+                </span>
+              </div>
+              {deal.freeShipping && (
+                <div className='flex items-center gap-1 text-sm'>
+                  <Truck className='w-4 h-4' />
+                  <span>Free Shipping</span>
+                </div>
+              )}
+            </div>
+
+            {/* Stock Progress */}
+            <div>
+              <div className='flex items-center justify-between text-sm mb-2'>
+                <span className='text-gray-600 font-medium'>Stock Progress</span>
+                <span className={`
+                  font-semibold
+                  ${stockPercentage > 80 ? 'text-red-600' : stockPercentage > 50 ? 'text-yellow-600' : 'text-green-600'}
+                `}>
+                  {deal.stock} left
+                </span>
+              </div>
+              <div className='w-full bg-gray-200 rounded-full h-3 overflow-hidden'>
+                <div
+                  className={`
+                    h-full transition-all duration-300
+                    ${stockPercentage > 80 ? 'bg-red-500' : stockPercentage > 50 ? 'bg-yellow-500' : 'bg-green-500'}
+                  `}
+                  style={{ width: `${stockPercentage}%` }}
+                ></div>
+              </div>
+              <div className='text-xs text-gray-500 mt-1'>
+                {deal.sold} sold
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>Description</h3>
+              <p className='text-gray-600 leading-relaxed'>
+                {deal.description}
+              </p>
+            </div>
+
+            {/* Features */}
+            <div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-3'>Features</h3>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                {(deal.features || []).map((feature: string, index: number) => (
+                  <div key={index} className='flex items-center gap-2 text-sm text-gray-600'>
+                    <Check className='w-4 h-4 text-green-500' />
+                    {feature}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quantity and Add to Cart */}
+            <div className='space-y-4'>
+              <div className='flex items-center gap-4'>
+                <label className='text-sm font-medium text-gray-700'>Quantity:</label>
+                <div className='flex items-center border border-gray-300 rounded-lg'>
+                  <button
+                    onClick={() => handleQuantityChange(quantity - 1)}
+                    className='p-2 hover:bg-gray-100 transition-colors'
+                  >
+                    <Minus className='w-4 h-4' />
+                  </button>
+                  <span className='px-4 py-2 font-medium'>{quantity}</span>
+                  <button
+                    onClick={() => handleQuantityChange(quantity + 1)}
+                    className='p-2 hover:bg-gray-100 transition-colors'
+                  >
+                    <Plus className='w-4 h-4' />
+                  </button>
+                </div>
+                <span className='text-xs text-gray-500'>
+                  Max: {deal.stock} available
+                </span>
+              </div>
+
+              <button
+                onClick={handleAddToCart}
+                disabled={timeLeft.expired || deal.stock === 0}
+                className={`w-full py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
+                  isAddedToCart
+                    ? 'bg-green-500 text-white'
+                    : timeLeft.expired || deal.stock === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg'
+                }`}
+              >
+                {isAddedToCart ? (
+                  <>
+                    <Check className='w-5 h-5' />
+                    Added to Cart!
+                  </>
+                ) : timeLeft.expired ? (
+                  'Deal Expired'
+                ) : deal.stock === 0 ? (
+                  'Out of Stock'
+                ) : (
+                  <>
+                    <ShoppingCart className='w-5 h-5' />
+                    Get This Deal
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Features */}
+            <div className='space-y-3 pt-6 border-t border-gray-200'>
+              <div className='flex items-center gap-3'>
+                <Truck className='w-5 h-5 text-red-600' />
+                <span className='text-sm text-gray-600'>Free shipping on this deal</span>
+              </div>
+              <div className='flex items-center gap-3'>
+                <Shield className='w-5 h-5 text-red-600' />
+                <span className='text-sm text-gray-600'>30-day return policy</span>
+              </div>
+              <div className='flex items-center gap-3'>
+                <RefreshCw className='w-5 h-5 text-red-600' />
+                <span className='text-sm text-gray-600'>1 year warranty included</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className='flex gap-4 pt-6 border-t border-gray-200'>
+              <button className='flex-1 border border-gray-300 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'>
+                <Heart className='w-5 h-5' />
+                Add to Wishlist
+              </button>
+              <Link
+                href='/deals'
+                className='flex-1 border border-gray-300 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2'
+              >
+                <ArrowLeft className='w-5 h-5' />
+                Back to Deals
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lightbox Modal */}
+      {isLightboxOpen && (
+        <div 
+          className='fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4'
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <div className='relative max-w-4xl max-h-full w-full h-full flex items-center justify-center'>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsLightboxOpen(false)
+              }}
+              className='absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10'
+            >
+              <X className='w-8 h-8' />
+            </button>
+            <img
+              src={lightboxImage}
+              alt='Enlarged view'
+              className='max-w-full max-h-full object-contain'
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default DealDetailPage
