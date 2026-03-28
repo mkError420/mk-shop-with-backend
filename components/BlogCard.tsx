@@ -207,8 +207,8 @@ const BlogCard = ({
         <CommentSection
           postId={String(post.id)}
           comments={comments}
-          onAddComment={handleAddComment}
-          onLikeComment={handleLikeComment}
+          onAddComment={(postId, comment) => handleAddComment(Number(postId), comment)}
+          onLikeComment={(postId, commentId) => handleLikeComment(Number(postId), commentId)}
           isOpen={showComments}
           onToggle={() => setShowComments(!showComments)}
         />
@@ -332,8 +332,8 @@ const BlogCard = ({
           <CommentSection
             postId={String(post.id)}
             comments={comments}
-            onAddComment={handleAddComment}
-            onLikeComment={handleLikeComment}
+            onAddComment={(postId, comment) => handleAddComment(Number(postId), comment)}
+            onLikeComment={(postId, commentId) => handleLikeComment(Number(postId), commentId)}
             isOpen={showComments}
             onToggle={() => setShowComments(!showComments)}
           />

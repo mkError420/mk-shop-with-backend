@@ -16,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
+    if (!auth) return
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser({ email: firebaseUser.email || '' })
@@ -33,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router, pathname])
 
   const handleLogout = async () => {
-    await signOut(auth)
+    if (auth) await signOut(auth)
     router.push('/dashboard/login')
   }
 
