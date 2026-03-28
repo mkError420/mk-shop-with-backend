@@ -30,7 +30,6 @@ export default function DashboardLoginPage() {
     setLoading(true)
     try {
       await signInWithEmailAndPassword(auth!, email, password)
-      await signInWithEmailAndPassword(auth, email, password)
       router.push('/dashboard')
       router.refresh()
     } catch (err: any) {
