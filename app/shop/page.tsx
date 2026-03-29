@@ -67,15 +67,35 @@ const ShopPage = () => {
 
   // Transform categories for FilterSidebar with proper subcategory structure and real counts
   const transformedCategories = useMemo(() => {
-    console.log('=== SIMPLE DEBUGGING ===')
-    console.log('PRODUCTS:')
-    products.forEach(p => console.log(`  - "${p.name}" -> "${p.category}"`))
-    console.log('CATEGORIES:')
-    categoriesToUse.forEach(c => {
-      console.log(`  - "${c.title}"`)
-      c.subcategories?.forEach(s => console.log(`    - "${s.title}"`))
+    console.log('=== CATEGORY MATCHING TEST ===')
+    
+    // Test each product against each category
+    categoriesToUse.forEach(cat => {
+      console.log(`\nTesting category: "${cat.title}"`)
+      
+      const matchingProducts = products.filter(product => {
+        const productCategory = product.category?.toLowerCase() || ''
+        const categoryName = cat.title.toLowerCase()
+        
+        // Try different matching strategies
+        const exactMatch = productCategory === categoryName
+        const hierarchicalMatch = productCategory.endsWith(' > ' + categoryName)
+        const containsMatch = productCategory.includes(' > ' + categoryName)
+        const startsWithMatch = productCategory.startsWith(categoryName + ' > ')
+        
+        const matches = exactMatch || hierarchicalMatch || containsMatch || startsWithMatch
+        
+        if (matches) {
+          console.log(`  ✅ "${product.name}" (${product.category})`)
+        }
+        
+        return matches
+      })
+      
+      console.log(`  Total matches: ${matchingProducts.length}`)
     })
-    console.log('=== END DEBUGGING ===')
+    
+    console.log('=== END TEST ===\n')
     
     return categoriesToUse.map(cat => {
       // Count products for main category (including all subcategories)
@@ -90,10 +110,6 @@ const ShopPage = () => {
                                 productCategory.endsWith(' > ' + mainCategoryName)
         
         const matches = exactMatch || hierarchicalMatch
-        
-        if (matches) {
-          console.log(`✅ Product "${product.name}" matches main category "${cat.title}":`, `"${productCategory}"`, `"${mainCategoryName}"`)
-        }
         
         return matches
       }).length
@@ -110,10 +126,6 @@ const ShopPage = () => {
                                  productCategory.startsWith(subCategoryName + ' > ') ||
                                  productCategory.includes(' > ' + subCategoryName + ' > ') ||
                                  productCategory.includes(' > ' + subCategoryName)
-          
-          if (hierarchicalMatch) {
-            console.log(`✅ Product "${product.name}" matches subcategory "${sub.title}":`, `"${productCategory}"`, `"${subCategoryName}"`)
-          }
           
           return hierarchicalMatch
         }).length
