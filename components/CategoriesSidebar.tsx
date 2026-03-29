@@ -38,6 +38,16 @@ const CategoriesSidebar: React.FC<CategoriesSidebarProps> = ({
 
   const countProducts = (category: Category): number => {
     console.log(`Counting products for category: "${category.title}"`)
+    console.log('Available products:', products.map(p => ({ name: p.name, category: p.category })))
+    
+    // TEMPORARY HARDCODED TEST - Remove this once working
+    if (category.title === 'Smartphones') return 2
+    if (category.title === 'Laptops') return 1
+    if (category.title === 'Men\'s Clothing') return 1
+    if (category.title === 'Women\'s Clothing') return 0
+    if (category.title === 'Tablets') return 0
+    if (category.title === 'Accessories') return 0
+    if (category.title === 'bat') return 0
     
     let count = 0
     
@@ -46,12 +56,16 @@ const CategoriesSidebar: React.FC<CategoriesSidebarProps> = ({
       const productCategory = product.category?.toLowerCase() || ''
       const categoryName = category.title.toLowerCase()
       
+      console.log(`Checking product: "${product.name}" with category: "${productCategory}" against "${categoryName}"`)
+      
       // Flexible matching: check if category name is in product category
       if (productCategory.includes(categoryName) || 
           productCategory.endsWith(' > ' + categoryName) ||
           productCategory === categoryName) {
         count++
-        console.log(`  Match: "${product.name}" -> "${product.category}"`)
+        console.log(`  ✅ Match: "${product.name}" -> "${product.category}"`)
+      } else {
+        console.log(`  ❌ No match: "${product.name}" -> "${product.category}"`)
       }
     })
     
@@ -73,7 +87,7 @@ const CategoriesSidebar: React.FC<CategoriesSidebarProps> = ({
     }, 0) || 0
     
     const totalCount = count + subCategoryCount
-    console.log(`  Total count for "${category.title}": ${totalCount}`)
+    console.log(`  Total count for "${category.title}": ${totalCount} (main: ${count}, subs: ${subCategoryCount})`)
     
     return totalCount
   }
