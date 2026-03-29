@@ -84,9 +84,12 @@ const ShopPage = () => {
         const mainCategoryName = cat.title.toLowerCase()
         
         // Check if product category matches main category (exact or hierarchical)
-        const matches = productCategory === mainCategoryName || 
-                      productCategory.startsWith(mainCategoryName + ' > ') ||
-                      productCategory.includes(' > ' + mainCategoryName)
+        const exactMatch = productCategory === mainCategoryName
+        const hierarchicalMatch = productCategory.startsWith(mainCategoryName + ' > ') ||
+                                productCategory.includes(' > ' + mainCategoryName) ||
+                                productCategory.endsWith(' > ' + mainCategoryName)
+        
+        const matches = exactMatch || hierarchicalMatch
         
         if (matches) {
           console.log(`✅ Product "${product.name}" matches main category "${cat.title}":`, `"${productCategory}"`, `"${mainCategoryName}"`)
@@ -100,11 +103,13 @@ const ShopPage = () => {
           const productCategory = product.category?.toLowerCase() || ''
           const subCategoryName = sub.title.toLowerCase()
           
-          // For subcategories, only count products that exactly match this subcategory
-          // OR are hierarchical with this subcategory as the immediate parent
+          // For subcategories, check multiple matching patterns
           const exactMatch = productCategory === subCategoryName
           const hierarchicalMatch = productCategory === subCategoryName || 
-                                 productCategory === (cat.title.toLowerCase() + ' > ' + subCategoryName)
+                                 productCategory.endsWith(' > ' + subCategoryName) ||
+                                 productCategory.startsWith(subCategoryName + ' > ') ||
+                                 productCategory.includes(' > ' + subCategoryName + ' > ') ||
+                                 productCategory.includes(' > ' + subCategoryName)
           
           if (hierarchicalMatch) {
             console.log(`✅ Product "${product.name}" matches subcategory "${sub.title}":`, `"${productCategory}"`, `"${subCategoryName}"`)
