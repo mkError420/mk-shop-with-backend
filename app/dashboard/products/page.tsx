@@ -53,13 +53,7 @@ export default function DashboardProductsPage() {
         category: 'Electronics',
         description: 'Latest iPhone 13 with advanced features',
         stock: 25,
-        featured: true,
-        images: [
-          'https://www.custommacbd.com/cdn/shop/products/iphone-13-pink-Custom-Mac-BD.jpg?v=1634647421',
-          'https://example.com/iphone13-blue.jpg',
-          'https://example.com/iphone13-black.jpg',
-          'https://example.com/iphone13-white.jpg'
-        ]
+        featured: true
       },
       {
         id: 'mmbkna9rmijocw75jf8',
@@ -79,26 +73,20 @@ export default function DashboardProductsPage() {
         name: 'Lenovo Laptop',
         price: 76500,
         originalPrice: 77300,
-        image: 'https://p4-ofp.static.pub//fes/cms/2023/08/23/983kt3002y3un5m318o1coqa0o7hxl595568.png',
+        image: 'https://p4-ofp.static.pub/fes/cms/2023/08/23/983kt3002y3un5m318o1coqa0o7hxl595568.png',
         rating: 4.7,
         reviews: 45,
         badge: 'New',
         category: 'Electronics',
         description: 'ThinkPad L13 2-in-1 Gen 5 (13" Intel)',
         stock: 15,
-        featured: false,
-        images: [
-          'https://p4-ofp.static.pub//fes/cms/2023/08/23/983kt3002y3un5m318o1coqa0o7hxl595568.png',
-          'https://techmarvels.com.bd/wp-content/uploads/2025/12/IdeaPad_Slim_3_14IRH10_CT2_08-768x768.webp',
-          'https://p1-ofp.static.pub//fes/cms/2024/12/26/a95m3ujigs7g89r8dy8u6tuk4bawdc795866.png',
-          'https://www.dearit.com.bd/image/cache/catalog/Lenovo/lenovo-thinkpad-l490-laptop-i5-8th-8-256-gb-laptop-3-500x500.jpg'
-        ]
+        featured: false
       },
       {
         id: 'mmbkt5y9wzj1u8x2h7k',
         name: 'Wireless Earbuds',
         price: 3500,
-        image: 'https://example.com/earbuds.jpg',
+        image: 'https://images.unsplash.com/photo-1590659080609-987e84a626e3?w=400&q=80',
         rating: 4.2,
         reviews: 234,
         category: 'Electronics',
@@ -111,7 +99,7 @@ export default function DashboardProductsPage() {
         name: 'Tablet Pro',
         price: 45000,
         originalPrice: 49990,
-        image: 'https://example.com/tablet.jpg',
+        image: 'https://images.unsplash.com/photo-1544244015-4f36-2ec6-4fb0-26ab5d0a26a?w=400&q=80',
         rating: 4.6,
         reviews: 67,
         badge: 'Limited',
@@ -124,7 +112,7 @@ export default function DashboardProductsPage() {
         id: 'mmbqr3s4t5u6v7w8x9y',
         name: 'Men\'s T-Shirt',
         price: 1200,
-        image: 'https://example.com/tshirt.jpg',
+        image: 'https://images.unsplash.com/photo-1521572165945-114c23d98d4a?w=400&q=80',
         rating: 4.1,
         reviews: 156,
         category: 'Fashion',
@@ -137,7 +125,7 @@ export default function DashboardProductsPage() {
         name: 'Women\'s Handbag',
         price: 3500,
         originalPrice: 4200,
-        image: 'https://example.com/handbag.jpg',
+        image: 'https://images.unsplash.com/photo-1553063075-8bd7042f3161?w=400&q=80',
         rating: 4.4,
         reviews: 89,
         badge: 'Sale',
@@ -150,7 +138,7 @@ export default function DashboardProductsPage() {
         id: 'mmbuv8w9x0y1z2a3b4c',
         name: 'Office Chair',
         price: 8500,
-        image: 'https://example.com/chair.jpg',
+        image: 'https://images.unsplash.com/photo-1586023498357-8e21cf2f3dfe?w=400&q=80',
         rating: 4.3,
         reviews: 45,
         category: 'Home & Garden',
@@ -852,12 +840,15 @@ export default function DashboardProductsPage() {
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors relative">
-              {imagePreview || form.image ? (
+              {(imagePreview || form.image) ? (
                 <div className="relative">
                   <img
                     src={imagePreview || form.image}
                     alt="Product preview"
                     className="w-24 h-24 mx-auto rounded-lg object-cover mb-2"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/150x150/cccccc/000000?text=Image+Error'
+                    }}
                   />
                   <button
                     type="button"
@@ -925,11 +916,21 @@ export default function DashboardProductsPage() {
                 <tr key={product.id} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
+                      {product.image ? (
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-12 h-12 rounded-lg object-cover"
+                          onError={(e) => {
+                            // If image fails to load, show placeholder
+                            e.currentTarget.src = 'https://via.placeholder.com/150x150/cccccc/000000?text=No+Image'
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                          <Package className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
                       <div>
                         <div className="font-medium text-gray-900">{product.name}</div>
                         <div className="text-sm text-gray-500">
