@@ -14,12 +14,29 @@ export default function DashboardDealsPage() {
 
   const fetchDeals = async () => {
     try {
+      setLoading(true)
+      setError('')
       const response = await api.deals.list() as any
-      const dealsData = Array.isArray(response) ? response : (response?.data || [])
+      console.log('Deals API Response:', response)
+      
+      // Handle different response formats
+      let dealsData = []
+      if (Array.isArray(response)) {
+        dealsData = response
+      } else if (response?.data && Array.isArray(response.data)) {
+        dealsData = response.data
+      } else if (response?.success && response?.data && Array.isArray(response.data)) {
+        dealsData = response.data
+      } else {
+        console.warn('Unexpected API response format:', response)
+        dealsData = []
+      }
+      
+      console.log('Processed deals data:', dealsData.length, 'items')
       setDeals(dealsData)
     } catch (err) {
       console.error('Error fetching deals:', err)
-      setError('Failed to load deals')
+      setError(`Failed to load deals: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
@@ -192,14 +209,29 @@ export default function DashboardDealsPage() {
   if (error) {
     return (
       <div className="text-center py-16">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Error Loading Deals</h2>
-        <p className="text-gray-600 mb-6">{error}</p>
-        <button 
-          onClick={fetchDeals} 
-          className="bg-shop_dark_green text-white px-6 py-2 rounded-lg hover:bg-shop_light_green"
-        >
-          Try Again
-        </button>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto mb-6">
+          <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-red-900 mb-2">Error Loading Deals</h2>
+          <p className="text-red-700 mb-4">{error}</p>
+          <div className="text-sm text-red-600 mb-6">
+            This might be due to:
+            <ul className="list-disc list-inside mt-2 text-left">
+              <li>API connectivity issues</li>
+              <li>Database access problems</li>
+              <li>Network connectivity issues</li>
+            </ul>
+          </div>
+          <button 
+            onClick={fetchDeals} 
+            className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     )
   }
