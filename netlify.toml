@@ -17,3 +17,7 @@
 
 [functions]
   directory = "netlify/functions"
+  node_modules = "node_modules"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
