@@ -67,85 +67,39 @@ const ShopPage = () => {
 
   // Transform categories for FilterSidebar with proper subcategory structure and real counts
   const transformedCategories = useMemo(() => {
-    console.log('=== CATEGORY MATCHING TEST ===')
+    console.log('=== DIRECT CATEGORY FIX ===')
+    console.log('Products:', products.length)
+    console.log('Categories:', categoriesToUse.length)
     
-    // Test each product against each category
-    categoriesToUse.forEach(cat => {
-      console.log(`\nTesting category: "${cat.title}"`)
+    // Simple direct counting approach
+    return categoriesToUse.map(cat => {
+      let count = 0
       
-      const matchingProducts = products.filter(product => {
+      // Count products for this category using simple string matching
+      products.forEach(product => {
         const productCategory = product.category?.toLowerCase() || ''
         const categoryName = cat.title.toLowerCase()
         
-        // Try different matching strategies
-        const exactMatch = productCategory === categoryName
-        const hierarchicalMatch = productCategory.endsWith(' > ' + categoryName)
-        const containsMatch = productCategory.includes(' > ' + categoryName)
-        const startsWithMatch = productCategory.startsWith(categoryName + ' > ')
-        
-        const matches = exactMatch || hierarchicalMatch || containsMatch || startsWithMatch
-        
-        if (matches) {
-          console.log(`  ✅ "${product.name}" (${product.category})`)
+        // Simple matching: check if category name is in product category
+        if (productCategory.includes(categoryName) || 
+            productCategory.endsWith(' > ' + categoryName) ||
+            productCategory === categoryName) {
+          count++
+          console.log(`Match: "${product.name}" -> "${product.category}" matches "${cat.title}"`)
         }
-        
-        return matches
       })
       
-      console.log(`  Total matches: ${matchingProducts.length}`)
-    })
-    
-    console.log('=== END TEST ===\n')
-    
-    return categoriesToUse.map(cat => {
-      // Count products for main category (including all subcategories)
-      const mainCategoryProducts = products.filter(product => {
-        const productCategory = product.category?.toLowerCase() || ''
-        const mainCategoryName = cat.title.toLowerCase()
-        
-        // Check if product category matches main category (exact or hierarchical)
-        const exactMatch = productCategory === mainCategoryName
-        const hierarchicalMatch = productCategory.startsWith(mainCategoryName + ' > ') ||
-                                productCategory.includes(' > ' + mainCategoryName) ||
-                                productCategory.endsWith(' > ' + mainCategoryName)
-        
-        const matches = exactMatch || hierarchicalMatch
-        
-        return matches
-      }).length
-      
-      const subcategoriesWithCounts = cat.subcategories?.map(sub => {
-        const subCategoryProducts = products.filter(product => {
-          const productCategory = product.category?.toLowerCase() || ''
-          const subCategoryName = sub.title.toLowerCase()
-          
-          // For subcategories, check multiple matching patterns
-          const exactMatch = productCategory === subCategoryName
-          const hierarchicalMatch = productCategory === subCategoryName || 
-                                 productCategory.endsWith(' > ' + subCategoryName) ||
-                                 productCategory.startsWith(subCategoryName + ' > ') ||
-                                 productCategory.includes(' > ' + subCategoryName + ' > ') ||
-                                 productCategory.includes(' > ' + subCategoryName)
-          
-          return hierarchicalMatch
-        }).length
-        return {
-          id: sub.slug, // Use slug as ID for consistency
-          name: sub.title,
-          count: subCategoryProducts
-        }
-      }) || []
-      
-      // Main category count includes ALL products (main + all subcategories)
-      const totalCount = mainCategoryProducts
-      
-      console.log(`📊 Category "${cat.title}" total count:`, totalCount, `(main: ${mainCategoryProducts}, subs: ${subcategoriesWithCounts.map(s => s.count).join('+')})`)
+      console.log(`Category "${cat.title}": ${count} products`)
       
       return {
-        id: cat.slug, // Use slug as ID for consistency
+        id: cat.slug,
         name: cat.title,
-        count: totalCount,
-        subcategories: subcategoriesWithCounts
+        count: count,
+        subcategories: cat.subcategories?.map(sub => ({
+          id: sub.slug,
+          name: sub.title,
+          count: 0 // For now, set subcategories to 0
+        })) || []
       }
     })
   }, [categoriesToUse, products])
