@@ -67,9 +67,15 @@ const ShopPage = () => {
 
   // Transform categories for FilterSidebar with proper subcategory structure and real counts
   const transformedCategories = useMemo(() => {
-    console.log('=== CATEGORY DEBUGGING START ===')
-    console.log('Products available for category counting:', products.map(p => ({ name: p.name, category: p.category })))
-    console.log('Categories to match:', categoriesToUse.map(c => ({ title: c.title, subs: c.subcategories?.map(s => s.title) })))
+    console.log('=== SIMPLE DEBUGGING ===')
+    console.log('PRODUCTS:')
+    products.forEach(p => console.log(`  - "${p.name}" -> "${p.category}"`))
+    console.log('CATEGORIES:')
+    categoriesToUse.forEach(c => {
+      console.log(`  - "${c.title}"`)
+      c.subcategories?.forEach(s => console.log(`    - "${s.title}"`))
+    })
+    console.log('=== END DEBUGGING ===')
     
     return categoriesToUse.map(cat => {
       // Count products for main category (including all subcategories)
