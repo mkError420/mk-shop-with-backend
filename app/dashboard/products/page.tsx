@@ -25,13 +25,17 @@ export default function DashboardProductsPage() {
   // Load products from localStorage on initial load
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
-      const savedProducts = localStorage.getItem('dashboardProducts')
-      if (savedProducts) {
-        try {
-          return JSON.parse(savedProducts)
-        } catch (error) {
-          console.error('Failed to load saved products:', error)
+      try {
+        const savedProducts = localStorage.getItem('dashboardProducts')
+        if (savedProducts) {
+          const parsed = JSON.parse(savedProducts)
+          console.log('Loaded products from localStorage:', parsed.length, 'items')
+          return parsed
         }
+      } catch (error) {
+        console.error('Failed to load saved products:', error)
+        // Clear corrupted data
+        localStorage.removeItem('dashboardProducts')
       }
     }
     
@@ -371,7 +375,13 @@ export default function DashboardProductsPage() {
       // Save to localStorage and update state
       setProducts(updatedProducts)
       if (typeof window !== 'undefined') {
-        localStorage.setItem('dashboardProducts', JSON.stringify(updatedProducts))
+        // Create a lightweight version without images to save storage space
+        const lightweightProducts = updatedProducts.map(product => ({
+          ...product,
+          image: product.image && !product.image.startsWith('data:') ? product.image : 'https://example.com/product.jpg'
+        }))
+        
+        localStorage.setItem('dashboardProducts', JSON.stringify(lightweightProducts))
         alert('Products saved to localStorage successfully!')
       }
       
@@ -382,7 +392,33 @@ export default function DashboardProductsPage() {
       alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
       
     } catch (error: any) {
-      alert('Error details: ' + (error?.message || 'Unknown error'))
+      if (error.message && error.message.includes('quota')) {
+        alert('Storage quota exceeded! Clearing old data and trying again...')
+        // Clear localStorage and try again
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('dashboardProducts')
+          // Retry with minimal data
+          const minimalProduct = {
+            id: editingProduct?.id || Date.now().toString(),
+            name: form.name || 'Test Product',
+            price: parseFloat(form.price) || 1000,
+            category: form.category || 'Uncategorized',
+            stock: parseInt(form.stock) || 10,
+            image: 'https://example.com/product.jpg'
+          }
+          const minimalProducts = editingProduct 
+            ? products.map(p => p.id === editingProduct.id ? minimalProduct : p)
+            : [...products, minimalProduct]
+          
+          setProducts(minimalProducts)
+          localStorage.setItem('dashboardProducts', JSON.stringify(minimalProducts))
+          alert('Product saved with minimal data!')
+          resetForm()
+          setShowForm(false)
+        }
+      } else {
+        alert('Error details: ' + (error?.message || 'Unknown error'))
+      }
       console.error('Failed to save product:', error)
     }
   }
