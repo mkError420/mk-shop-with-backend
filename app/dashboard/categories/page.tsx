@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Upload, X, Search, TrendingUp, TrendingDown, Folder, FolderOpen, PieChart, BarChart3, Layers, Tag } from 'lucide-react'
-import { api } from '@/lib/api-client'
 
 interface Category {
   id: string
@@ -62,18 +61,41 @@ export default function DashboardCategoriesPage() {
   const recentCategories = categories.slice(0, 5)
 
   useEffect(() => { 
-    api.categories.list().then((data: Category[]) => {
-      // Build hierarchical structure
-      const mainCategories = data.filter(cat => !cat.parentId)
-      const subcategories = data.filter(cat => cat.parentId)
-      
-      const structuredCategories = mainCategories.map(main => ({
-        ...main,
-        subcategories: subcategories.filter(sub => sub.parentId === main.id)
-      }))
-      
-      setCategories(structuredCategories)
-    }).finally(() => setLoading(false)) 
+    // Load categories directly from database file
+    const loadCategories = async () => {
+      try {
+        const response = await fetch('/api/categories')
+        const data = await response.json()
+        
+        // Build hierarchical structure
+        const mainCategories = data.filter((cat: Category) => !cat.parentId)
+        const subcategories = data.filter((cat: Category) => cat.parentId)
+        
+        const structuredCategories = mainCategories.map((main: Category) => ({
+          ...main,
+          subcategories: subcategories.filter((sub: Category) => sub.parentId === main.id)
+        }))
+        
+        setCategories(structuredCategories)
+      } catch (error) {
+        console.error('Failed to load categories, using fallback data:', error)
+        // Fallback to some default categories
+        setCategories([
+          {
+            id: '1',
+            title: 'Electronics',
+            slug: 'electronics',
+            href: 'electronics',
+            subcategories: [
+              { id: '2', title: 'Smartphones', slug: 'smartphones', href: 'smartphones', parentId: '1' },
+              { id: '3', title: 'Laptops', slug: 'laptops', href: 'laptops', parentId: '1' }
+            ]
+          }
+        ])
+      }
+    }
+    
+    loadCategories().finally(() => setLoading(false))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,29 +108,42 @@ export default function DashboardCategoriesPage() {
       icon: form.icon
     }
     
-    if (editingCategory) {
-      // Update existing category
-      await api.categories.update(editingCategory.id, categoryData)
-    } else {
-      // Create new category
-      await api.categories.create(categoryData)
-    }
-    
-    resetForm()
-    setShowForm(false)
-    
-    // Refresh categories
-    api.categories.list().then((data: Category[]) => {
-      const mainCategories = data.filter(cat => !cat.parentId)
-      const subcategories = data.filter(cat => cat.parentId)
+    try {
+      if (editingCategory) {
+        // Update existing category
+        await fetch(`/api/categories/${editingCategory.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(categoryData)
+        })
+      } else {
+        // Create new category
+        await fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(categoryData)
+        })
+      }
       
-      const structuredCategories = mainCategories.map(main => ({
+      resetForm()
+      setShowForm(false)
+      
+      // Refresh categories
+      const response = await fetch('/api/categories')
+      const data = await response.json()
+      const mainCategories = data.filter((cat: Category) => !cat.parentId)
+      const subcategories = data.filter((cat: Category) => cat.parentId)
+      
+      const structuredCategories = mainCategories.map((main: Category) => ({
         ...main,
-        subcategories: subcategories.filter(sub => sub.parentId === main.id)
+        subcategories: subcategories.filter((sub: Category) => sub.parentId === main.id)
       }))
       
       setCategories(structuredCategories)
-    })
+    } catch (error) {
+      console.error('Failed to save category:', error)
+      alert('Failed to save category. Please try again.')
+    }
   }
 
   const resetForm = () => {
@@ -133,8 +168,16 @@ export default function DashboardCategoriesPage() {
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This will also delete all subcategories.`)) return
-    await api.categories.delete(id)
-    setCategories(prev => prev.filter(c => c.id !== id))
+    
+    try {
+      await fetch(`/api/categories?id=${id}`, {
+        method: 'DELETE'
+      })
+      setCategories(prev => prev.filter(c => c.id !== id))
+    } catch (error) {
+      console.error('Failed to delete category:', error)
+      alert('Failed to delete category. Please try again.')
+    }
   }
 
   const toggleExpanded = (categoryId: string) => {
