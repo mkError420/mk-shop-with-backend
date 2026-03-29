@@ -72,7 +72,7 @@ const ShopPage = () => {
     console.log('Categories to match:', categoriesToUse.map(c => ({ title: c.title, subs: c.subcategories?.map(s => s.title) })))
     
     return categoriesToUse.map(cat => {
-      // Count products for main category and its subcategories
+      // Count products for main category (including all subcategories)
       const mainCategoryProducts = products.filter(product => {
         const productCategory = product.category?.toLowerCase() || ''
         const mainCategoryName = cat.title.toLowerCase()
@@ -83,9 +83,7 @@ const ShopPage = () => {
                       productCategory.includes(' > ' + mainCategoryName)
         
         if (matches) {
-          console.log(`✅ Product "${product.name}" matches category "${cat.title}":`, `"${productCategory}"`, `"${mainCategoryName}"`)
-        } else {
-          console.log(`❌ Product "${product.name}" does NOT match category "${cat.title}":`, `"${productCategory}"`, `"${mainCategoryName}"`)
+          console.log(`✅ Product "${product.name}" matches main category "${cat.title}":`, `"${productCategory}"`, `"${mainCategoryName}"`)
         }
         
         return matches
@@ -96,16 +94,17 @@ const ShopPage = () => {
           const productCategory = product.category?.toLowerCase() || ''
           const subCategoryName = sub.title.toLowerCase()
           
-          // Check if product category matches subcategory (exact or hierarchical)
-          const matches = productCategory === subCategoryName || 
-                        productCategory.includes(' > ' + subCategoryName) ||
-                        productCategory.startsWith(subCategoryName + ' > ')
+          // For subcategories, only count products that exactly match this subcategory
+          // OR are hierarchical with this subcategory as the immediate parent
+          const exactMatch = productCategory === subCategoryName
+          const hierarchicalMatch = productCategory === subCategoryName || 
+                                 productCategory === (cat.title.toLowerCase() + ' > ' + subCategoryName)
           
-          if (matches) {
+          if (hierarchicalMatch) {
             console.log(`✅ Product "${product.name}" matches subcategory "${sub.title}":`, `"${productCategory}"`, `"${subCategoryName}"`)
           }
           
-          return matches
+          return hierarchicalMatch
         }).length
         return {
           id: sub.slug, // Use slug as ID for consistency
@@ -114,8 +113,8 @@ const ShopPage = () => {
         }
       }) || []
       
-      // Total count includes main category products + all subcategory products
-      const totalCount = mainCategoryProducts + subcategoriesWithCounts.reduce((sum, sub) => sum + sub.count, 0)
+      // Main category count includes ALL products (main + all subcategories)
+      const totalCount = mainCategoryProducts
       
       console.log(`📊 Category "${cat.title}" total count:`, totalCount, `(main: ${mainCategoryProducts}, subs: ${subcategoriesWithCounts.map(s => s.count).join('+')})`)
       
