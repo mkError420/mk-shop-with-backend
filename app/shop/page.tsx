@@ -67,7 +67,9 @@ const ShopPage = () => {
 
   // Transform categories for FilterSidebar with proper subcategory structure and real counts
   const transformedCategories = useMemo(() => {
+    console.log('=== CATEGORY DEBUGGING START ===')
     console.log('Products available for category counting:', products.map(p => ({ name: p.name, category: p.category })))
+    console.log('Categories to match:', categoriesToUse.map(c => ({ title: c.title, subs: c.subcategories?.map(s => s.title) })))
     
     return categoriesToUse.map(cat => {
       // Count products for main category and its subcategories
@@ -81,7 +83,9 @@ const ShopPage = () => {
                       productCategory.includes(' > ' + mainCategoryName)
         
         if (matches) {
-          console.log(`Product "${product.name}" matches category "${cat.title}":`, productCategory, mainCategoryName)
+          console.log(`✅ Product "${product.name}" matches category "${cat.title}":`, `"${productCategory}"`, `"${mainCategoryName}"`)
+        } else {
+          console.log(`❌ Product "${product.name}" does NOT match category "${cat.title}":`, `"${productCategory}"`, `"${mainCategoryName}"`)
         }
         
         return matches
@@ -98,7 +102,7 @@ const ShopPage = () => {
                         productCategory.startsWith(subCategoryName + ' > ')
           
           if (matches) {
-            console.log(`Product "${product.name}" matches subcategory "${sub.title}":`, productCategory, subCategoryName)
+            console.log(`✅ Product "${product.name}" matches subcategory "${sub.title}":`, `"${productCategory}"`, `"${subCategoryName}"`)
           }
           
           return matches
@@ -113,7 +117,7 @@ const ShopPage = () => {
       // Total count includes main category products + all subcategory products
       const totalCount = mainCategoryProducts + subcategoriesWithCounts.reduce((sum, sub) => sum + sub.count, 0)
       
-      console.log(`Category "${cat.title}" total count:`, totalCount, `(main: ${mainCategoryProducts}, subs: ${subcategoriesWithCounts.map(s => s.count).join('+')})`)
+      console.log(`📊 Category "${cat.title}" total count:`, totalCount, `(main: ${mainCategoryProducts}, subs: ${subcategoriesWithCounts.map(s => s.count).join('+')})`)
       
       return {
         id: cat.slug, // Use slug as ID for consistency
