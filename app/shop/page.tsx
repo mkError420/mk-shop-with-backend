@@ -8,7 +8,6 @@ import CategoriesSidebar from '@/components/CategoriesSidebar';
 import ProductCard from '@/components/ProductCard';
 import Pagination from '@/components/Pagination';
 import { useCategories } from '@/hooks/useCategories';
-import { api } from '@/lib/api-client';
 
 const ShopPage = () => {
   const { categories, loading: categoriesLoading } = useCategories()
@@ -102,20 +101,25 @@ const ShopPage = () => {
     { name: 'Daily Deal', slug: 'daily', icon: '' }
   ]
 
-  // Fetch products from API
+  // Fetch products from dashboard localStorage
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Fetch all products first to get featured products from all categories
-        const data = await api.products.list()
-        setProducts(data)
-        
-        // Also fetch featured products to ensure we have all category products marked as featured
-        const featuredData = await api.products.list({ featured: 'true' })
-        console.log('Featured products from API:', featuredData)
+        // Try to get products from dashboard localStorage
+        if (typeof window !== 'undefined') {
+          const savedProducts = localStorage.getItem('dashboardProducts')
+          if (savedProducts) {
+            const parsedProducts = JSON.parse(savedProducts)
+            console.log('Products loaded from dashboard localStorage:', parsedProducts.length, 'items')
+            setProducts(parsedProducts)
+          } else {
+            console.log('No products in localStorage, using fallback')
+            setProducts([]) // Use empty array if no saved products
+          }
+        }
       } catch (error) {
-        console.error('Error fetching products:', error)
-        setProducts([]) // Use empty array if API fails
+        console.error('Error loading products from localStorage:', error)
+        setProducts([]) // Use empty array if localStorage fails
       }
     }
     fetchProducts()
@@ -125,19 +129,22 @@ const ShopPage = () => {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const data = await api.banners.list()
-        console.log('Banners fetched:', data)
-        
-        // Ensure we always have an array
-        if (Array.isArray(data)) {
-          setBanners(data)
-        } else {
-          console.warn('Banners API did not return an array, using empty array')
-          setBanners([])
+        // Try to get banners from localStorage first
+        if (typeof window !== 'undefined') {
+          const savedBanners = localStorage.getItem('dashboardBanners')
+          if (savedBanners) {
+            const parsedBanners = JSON.parse(savedBanners)
+            console.log('Banners loaded from localStorage:', parsedBanners)
+            setBanners(parsedBanners)
+          } else {
+            // Fallback to empty array
+            console.log('No banners in localStorage, using empty array')
+            setBanners([])
+          }
         }
       } catch (error) {
-        console.error('Error fetching banners:', error)
-        setBanners([]) // Use empty array if API fails
+        console.error('Error loading banners:', error)
+        setBanners([]) // Use empty array if localStorage fails
       } finally {
         setBannersLoading(false)
       }
@@ -149,9 +156,17 @@ const ShopPage = () => {
   const refreshBanners = async () => {
     setBannersLoading(true)
     try {
-      const data = await api.banners.list()
-      setBanners(data)
-      console.log('Banners refreshed:', data)
+      if (typeof window !== 'undefined') {
+        const savedBanners = localStorage.getItem('dashboardBanners')
+        if (savedBanners) {
+          const parsedBanners = JSON.parse(savedBanners)
+          setBanners(parsedBanners)
+          console.log('Banners refreshed from localStorage:', parsedBanners)
+        } else {
+          setBanners([])
+          console.log('No banners to refresh')
+        }
+      }
     } catch (error) {
       console.error('Error refreshing banners:', error)
     } finally {
