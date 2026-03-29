@@ -18,10 +18,27 @@ export const useCategories = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        console.log('useCategories: Loading static categories data...')
+        console.log('useCategories: Loading categories from localStorage...')
         setLoading(true)
         
-        // Static categories data that matches the dashboard
+        // Try to get categories from localStorage (dashboard changes)
+        if (typeof window !== 'undefined') {
+          const savedCategories = localStorage.getItem('dashboardCategories')
+          if (savedCategories) {
+            try {
+              const parsedCategories = JSON.parse(savedCategories)
+              console.log('useCategories: Loaded dashboard categories:', parsedCategories)
+              setCategories(parsedCategories)
+              setError(null)
+              setLoading(false)
+              return
+            } catch (error) {
+              console.error('useCategories: Failed to parse saved categories:', error)
+            }
+          }
+        }
+        
+        // Fallback to static categories if no saved data
         const staticCategories: Category[] = [
           {
             id: '1',
@@ -58,7 +75,7 @@ export const useCategories = () => {
           }
         ]
         
-        console.log('useCategories: Static categories loaded:', staticCategories)
+        console.log('useCategories: Using static categories:', staticCategories)
         setCategories(staticCategories)
         setError(null)
       } catch (err) {

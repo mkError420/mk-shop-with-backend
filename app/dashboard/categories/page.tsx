@@ -15,42 +15,56 @@ interface Category {
 }
 
 export default function DashboardCategoriesPage() {
-  // Static categories data that always works
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: '1',
-      title: 'Electronics',
-      slug: 'electronics',
-      href: 'electronics',
-      icon: 'https://example.com/electronics-icon.png',
-      subcategories: [
-        { id: '2', title: 'Smartphones', slug: 'smartphones', href: 'smartphones', parentId: '1' },
-        { id: '3', title: 'Laptops', slug: 'laptops', href: 'laptops', parentId: '1' },
-        { id: '4', title: 'Tablets', slug: 'tablets', href: 'tablets', parentId: '1' }
-      ]
-    },
-    {
-      id: '5',
-      title: 'Fashion',
-      slug: 'fashion',
-      href: 'fashion',
-      subcategories: [
-        { id: '6', title: 'Men\'s Clothing', slug: 'mens-clothing', href: 'mens-clothing', parentId: '5' },
-        { id: '7', title: 'Women\'s Clothing', slug: 'womens-clothing', href: 'womens-clothing', parentId: '5' },
-        { id: '8', title: 'Accessories', slug: 'accessories', href: 'accessories', parentId: '5' }
-      ]
-    },
-    {
-      id: '9',
-      title: 'Home & Garden',
-      slug: 'home-garden',
-      href: 'home-garden',
-      subcategories: [
-        { id: '10', title: 'Furniture', slug: 'furniture', href: 'furniture', parentId: '9' },
-        { id: '11', title: 'Decor', slug: 'decor', href: 'decor', parentId: '9' }
-      ]
+  // Load categories from localStorage on initial load
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedCategories = localStorage.getItem('dashboardCategories')
+      if (savedCategories) {
+        try {
+          return JSON.parse(savedCategories)
+        } catch (error) {
+          console.error('Failed to load saved categories:', error)
+        }
+      }
     }
-  ])
+    
+    // Default categories if no saved data
+    return [
+      {
+        id: '1',
+        title: 'Electronics',
+        slug: 'electronics',
+        href: 'electronics',
+        icon: 'https://example.com/electronics-icon.png',
+        subcategories: [
+          { id: '2', title: 'Smartphones', slug: 'smartphones', href: 'smartphones', parentId: '1' },
+          { id: '3', title: 'Laptops', slug: 'laptops', href: 'laptops', parentId: '1' },
+          { id: '4', title: 'Tablets', slug: 'tablets', href: 'tablets', parentId: '1' }
+        ]
+      },
+      {
+        id: '5',
+        title: 'Fashion',
+        slug: 'fashion',
+        href: 'fashion',
+        subcategories: [
+          { id: '6', title: 'Men\'s Clothing', slug: 'mens-clothing', href: 'mens-clothing', parentId: '5' },
+          { id: '7', title: 'Women\'s Clothing', slug: 'womens-clothing', href: 'womens-clothing', parentId: '5' },
+          { id: '8', title: 'Accessories', slug: 'accessories', href: 'accessories', parentId: '5' }
+        ]
+      },
+      {
+        id: '9',
+        title: 'Home & Garden',
+        slug: 'home-garden',
+        href: 'home-garden',
+        subcategories: [
+          { id: '10', title: 'Furniture', slug: 'furniture', href: 'furniture', parentId: '9' },
+          { id: '11', title: 'Decor', slug: 'decor', href: 'decor', parentId: '9' }
+        ]
+      }
+    ]
+  })
   
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -59,6 +73,14 @@ export default function DashboardCategoriesPage() {
   const [iconPreview, setIconPreview] = useState<string>('')
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState('')
+
+  // Save categories to localStorage whenever they change
+  const saveCategories = (updatedCategories: Category[]) => {
+    setCategories(updatedCategories)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboardCategories', JSON.stringify(updatedCategories))
+    }
+  }
 
   // Calculate statistics
   const calculateStats = () => {
@@ -114,27 +136,32 @@ export default function DashboardCategoriesPage() {
     }
     
     try {
+      let updatedCategories: Category[]
+      
       if (editingCategory) {
         // Update existing category
-        setCategories(prev => prev.map(cat => 
+        updatedCategories = categories.map(cat => 
           cat.id === editingCategory.id 
             ? { ...cat, ...categoryData }
             : cat
-        ))
+        )
       } else {
         // Create new category
         if (form.isMain) {
           // Add as main category
-          setCategories(prev => [...prev, { ...categoryData, subcategories: [] }])
+          updatedCategories = [...categories, { ...categoryData, subcategories: [] }]
         } else {
           // Add as subcategory to parent
-          setCategories(prev => prev.map(cat => 
+          updatedCategories = categories.map(cat => 
             cat.id === form.parentId 
               ? { ...cat, subcategories: [...(cat.subcategories || []), categoryData] }
               : cat
-          ))
+          )
         }
       }
+      
+      // Save to localStorage and update state
+      saveCategories(updatedCategories)
       
       resetForm()
       setShowForm(false)
@@ -173,10 +200,13 @@ export default function DashboardCategoriesPage() {
     
     try {
       // Remove category and any subcategories
-      setCategories(prev => prev.filter(c => c.id !== id).map(cat => ({
+      const updatedCategories = categories.filter(c => c.id !== id).map(cat => ({
         ...cat,
         subcategories: cat.subcategories?.filter(sub => sub.id !== id) || []
-      })))
+      }))
+      
+      // Save to localStorage and update state
+      saveCategories(updatedCategories)
       
       alert('Category deleted successfully!')
     } catch (error) {
