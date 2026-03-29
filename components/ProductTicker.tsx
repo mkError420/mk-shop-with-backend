@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Star } from 'lucide-react'
-import { api } from '@/lib/api-client'
 
 const ProductTicker = () => {
   const [products, setProducts] = useState<any[]>([])
@@ -16,24 +15,33 @@ const ProductTicker = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await api.products.list()
-        const allProducts = Array.isArray(response) ? response : []
-        
-        if (allProducts.length === 0) {
-          console.warn('No products available from API')
-          setProducts([])
-          return
+        // Try to get products from dashboard localStorage
+        if (typeof window !== 'undefined') {
+          const savedProducts = localStorage.getItem('dashboardProducts')
+          if (savedProducts) {
+            const parsedProducts = JSON.parse(savedProducts)
+            console.log('ProductTicker loaded products from localStorage:', parsedProducts.length, 'items')
+            
+            if (parsedProducts.length === 0) {
+              console.warn('No products available from localStorage')
+              setProducts([])
+              return
+            }
+            
+            const sortedProducts = parsedProducts.sort((a: any, b: any) => {
+              const idA = Number(a.id) || 0
+              const idB = Number(b.id) || 0
+              return idB - idA
+            })
+            
+            setProducts(sortedProducts.slice(0, 8))
+          } else {
+            console.warn('No products in localStorage')
+            setProducts([])
+          }
         }
-        
-        const sortedProducts = allProducts.sort((a: any, b: any) => {
-          const idA = Number(a.id) || 0
-          const idB = Number(b.id) || 0
-          return idB - idA
-        })
-        
-        setProducts(sortedProducts.slice(0, 8))
       } catch (error) {
-        console.error('Error fetching products:', error)
+        console.error('Error loading products from localStorage:', error)
         setProducts([])
       } finally {
         setLoading(false)
@@ -139,11 +147,11 @@ const ProductTicker = () => {
           {/* Price - Fixed height */}
           <div className='flex items-center justify-between h-6 flex-shrink-0 mt-auto'>
             <span className='text-lg font-bold text-shop_dark_green'>
-              ${Number(product.price).toFixed(2)}
+              ৳{Number(product.price).toLocaleString()}
             </span>
             {product.originalPrice && Number(product.originalPrice) > Number(product.price) && (
               <span className='text-xs text-gray-500 line-through'>
-                ${Number(product.originalPrice).toFixed(2)}
+                ৳{Number(product.originalPrice).toLocaleString()}
               </span>
             )}
           </div>
