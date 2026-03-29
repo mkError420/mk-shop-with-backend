@@ -37,19 +37,45 @@ const CategoriesSidebar: React.FC<CategoriesSidebarProps> = ({
   }
 
   const countProducts = (category: Category): number => {
-    // Count products for main category
-    const mainCategoryProducts = products.filter(product => 
-      product.category?.toLowerCase() === category.title.toLowerCase()
-    ).length
+    console.log(`Counting products for category: "${category.title}"`)
     
-    // Count products for subcategories
-    const subCategoryProducts = category.subcategories?.reduce((sum, sub) => {
-      return sum + products.filter(product => 
-        product.category?.toLowerCase() === sub.title.toLowerCase()
-      ).length
+    let count = 0
+    
+    // Count products for main category using flexible matching
+    products.forEach(product => {
+      const productCategory = product.category?.toLowerCase() || ''
+      const categoryName = category.title.toLowerCase()
+      
+      // Flexible matching: check if category name is in product category
+      if (productCategory.includes(categoryName) || 
+          productCategory.endsWith(' > ' + categoryName) ||
+          productCategory === categoryName) {
+        count++
+        console.log(`  Match: "${product.name}" -> "${product.category}"`)
+      }
+    })
+    
+    // Count products for subcategories using flexible matching
+    const subCategoryCount = category.subcategories?.reduce((sum, sub) => {
+      let subCount = 0
+      products.forEach(product => {
+        const productCategory = product.category?.toLowerCase() || ''
+        const subCategoryName = sub.title.toLowerCase()
+        
+        // Flexible matching for subcategories
+        if (productCategory.includes(subCategoryName) || 
+            productCategory.endsWith(' > ' + subCategoryName) ||
+            productCategory === subCategoryName) {
+          subCount++
+        }
+      })
+      return sum + subCount
     }, 0) || 0
     
-    return mainCategoryProducts + subCategoryProducts
+    const totalCount = count + subCategoryCount
+    console.log(`  Total count for "${category.title}": ${totalCount}`)
+    
+    return totalCount
   }
 
   const countSubProducts = (subcategory: Category): number => {
