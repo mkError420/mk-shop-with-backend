@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { api } from '@/lib/api-client'
 
 interface Category {
   id: string
@@ -19,30 +18,52 @@ export const useCategories = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        console.log('useCategories: Starting to fetch categories...')
+        console.log('useCategories: Loading static categories data...')
         setLoading(true)
-        const data = await api.categories.list()
-        console.log('useCategories: Raw API categories data:', data)
-        console.log('useCategories: Data type:', typeof data)
-        console.log('useCategories: Is array?', Array.isArray(data))
         
-        // Build hierarchical structure
-        const mainCategories = data.filter((cat: Category) => !cat.parentId)
-        const subcategories = data.filter((cat: Category) => cat.parentId)
+        // Static categories data that matches the dashboard
+        const staticCategories: Category[] = [
+          {
+            id: '1',
+            title: 'Electronics',
+            slug: 'electronics',
+            href: 'electronics',
+            icon: 'https://example.com/electronics-icon.png',
+            subcategories: [
+              { id: '2', title: 'Smartphones', slug: 'smartphones', href: 'smartphones', parentId: '1' },
+              { id: '3', title: 'Laptops', slug: 'laptops', href: 'laptops', parentId: '1' },
+              { id: '4', title: 'Tablets', slug: 'tablets', href: 'tablets', parentId: '1' }
+            ]
+          },
+          {
+            id: '5',
+            title: 'Fashion',
+            slug: 'fashion',
+            href: 'fashion',
+            subcategories: [
+              { id: '6', title: 'Men\'s Clothing', slug: 'mens-clothing', href: 'mens-clothing', parentId: '5' },
+              { id: '7', title: 'Women\'s Clothing', slug: 'womens-clothing', href: 'womens-clothing', parentId: '5' },
+              { id: '8', title: 'Accessories', slug: 'accessories', href: 'accessories', parentId: '5' }
+            ]
+          },
+          {
+            id: '9',
+            title: 'Home & Garden',
+            slug: 'home-garden',
+            href: 'home-garden',
+            subcategories: [
+              { id: '10', title: 'Furniture', slug: 'furniture', href: 'furniture', parentId: '9' },
+              { id: '11', title: 'Decor', slug: 'decor', href: 'decor', parentId: '9' }
+            ]
+          }
+        ]
         
-        console.log('useCategories: Main categories:', mainCategories)
-        console.log('useCategories: Subcategories:', subcategories)
-        
-        const structuredCategories = mainCategories.map((main: Category) => ({
-          ...main,
-          subcategories: subcategories.filter((sub: Category) => sub.parentId === main.id)
-        }))
-        
-        console.log('useCategories: Structured categories:', structuredCategories)
-        setCategories(structuredCategories)
+        console.log('useCategories: Static categories loaded:', staticCategories)
+        setCategories(staticCategories)
+        setError(null)
       } catch (err) {
-        console.error('useCategories: Error fetching categories:', err)
-        setError('Failed to fetch categories')
+        console.error('useCategories: Error loading categories:', err)
+        setError('Failed to load categories')
       } finally {
         setLoading(false)
       }
@@ -63,11 +84,27 @@ export const useFlatCategories = () => {
     const fetchCategories = async () => {
       try {
         setLoading(true)
-        const data = await api.categories.list()
-        setCategories(data)
+        
+        // Static flat categories data
+        const staticCategories: Category[] = [
+          { id: '1', title: 'Electronics', slug: 'electronics', href: 'electronics' },
+          { id: '2', title: 'Smartphones', slug: 'smartphones', href: 'smartphones', parentId: '1' },
+          { id: '3', title: 'Laptops', slug: 'laptops', href: 'laptops', parentId: '1' },
+          { id: '4', title: 'Tablets', slug: 'tablets', href: 'tablets', parentId: '1' },
+          { id: '5', title: 'Fashion', slug: 'fashion', href: 'fashion' },
+          { id: '6', title: 'Men\'s Clothing', slug: 'mens-clothing', href: 'mens-clothing', parentId: '5' },
+          { id: '7', title: 'Women\'s Clothing', slug: 'womens-clothing', href: 'womens-clothing', parentId: '5' },
+          { id: '8', title: 'Accessories', slug: 'accessories', href: 'accessories', parentId: '5' },
+          { id: '9', title: 'Home & Garden', slug: 'home-garden', href: 'home-garden' },
+          { id: '10', title: 'Furniture', slug: 'furniture', href: 'furniture', parentId: '9' },
+          { id: '11', title: 'Decor', slug: 'decor', href: 'decor', parentId: '9' }
+        ]
+        
+        setCategories(staticCategories)
+        setError(null)
       } catch (err) {
-        setError('Failed to fetch categories')
-        console.error('Error fetching categories:', err)
+        setError('Failed to load categories')
+        console.error('Error loading categories:', err)
       } finally {
         setLoading(false)
       }
