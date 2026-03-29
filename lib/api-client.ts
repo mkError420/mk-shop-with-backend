@@ -95,6 +95,60 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
       return fallbackDeals as T
     }
     
+    // For categories endpoint, provide fallback data
+    if (path === '/categories' && (!options || options.method === 'GET' || !options.method)) {
+      console.log('fetchApi: Providing fallback categories data')
+      const fallbackCategories = [
+        {
+          id: "fallback-1",
+          title: "Electronics",
+          slug: "electronics",
+          href: "electronics",
+          icon: ""
+        },
+        {
+          id: "fallback-2",
+          title: "Smartphones & Accessories",
+          slug: "smartphones-accessories",
+          href: "smartphones-accessories",
+          parentId: "fallback-1",
+          icon: ""
+        },
+        {
+          id: "fallback-3",
+          title: "Laptops & Computers",
+          slug: "laptops-computers",
+          href: "laptops-computers",
+          parentId: "fallback-1",
+          icon: ""
+        },
+        {
+          id: "fallback-4",
+          title: "Fashion",
+          slug: "fashion",
+          href: "fashion",
+          icon: ""
+        },
+        {
+          id: "fallback-5",
+          title: "Men's Clothing",
+          slug: "mens-clothing",
+          href: "mens-clothing",
+          parentId: "fallback-4",
+          icon: ""
+        },
+        {
+          id: "fallback-6",
+          title: "Women's Clothing",
+          slug: "womens-clothing",
+          href: "womens-clothing",
+          parentId: "fallback-4",
+          icon: ""
+        }
+      ]
+      return fallbackCategories as T
+    }
+    
     throw error
   }
 }

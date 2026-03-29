@@ -150,9 +150,16 @@ export default function NewDealPage() {
             >
               <option value="">Select a category</option>
               {categories.map(category => (
-                <option key={category.id} value={category.title}>
-                  {category.title}
-                </option>
+                <React.Fragment key={category.id}>
+                  <option value={category.title}>
+                    {category.title}
+                  </option>
+                  {category.subcategories?.map(sub => (
+                    <option key={sub.id} value={sub.title}>
+                      &nbsp;&nbsp;&nbsp;{sub.title}
+                    </option>
+                  ))}
+                </React.Fragment>
               ))}
             </select>
           </div>
