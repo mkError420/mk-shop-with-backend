@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, Trash2, Filter, Search, Download, ChevronDown, Package, AlertCircle, TrendingUp, TrendingDown, PieChart, BarChart3, DollarSign, ShoppingCart, Archive, Tag, Upload, X, Eye } from 'lucide-react'
-import { useCategories } from '@/hooks/useCategories'
 
 interface Product {
   id: string
@@ -159,7 +158,7 @@ export default function DashboardProductsPage() {
   })
   
   const [loading, setLoading] = useState(true)
-  const { categories } = useCategories()
+  const [categories, setCategories] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
@@ -180,6 +179,55 @@ export default function DashboardProductsPage() {
     image: ''
   })
   const [imagePreview, setImagePreview] = useState<string>('')
+
+  // Load categories from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCategories = localStorage.getItem('dashboardCategories')
+      if (savedCategories) {
+        try {
+          const parsedCategories = JSON.parse(savedCategories)
+          // Extract all categories (both main and subcategories)
+          const allCategories = parsedCategories.flatMap((cat: any) => [
+            { id: cat.id, title: cat.title },
+            ...(cat.subcategories || []).map((sub: any) => ({ id: sub.id, title: sub.title }))
+          ])
+          setCategories(allCategories)
+        } catch (error) {
+          console.error('Failed to load categories:', error)
+          // Fallback to default categories
+          setCategories([
+            { id: '1', title: 'Electronics' },
+            { id: '2', title: 'Smartphones' },
+            { id: '3', title: 'Laptops' },
+            { id: '4', title: 'Tablets' },
+            { id: '5', title: 'Fashion' },
+            { id: '6', title: 'Men\'s Clothing' },
+            { id: '7', title: 'Women\'s Clothing' },
+            { id: '8', title: 'Accessories' },
+            { id: '9', title: 'Home & Garden' },
+            { id: '10', title: 'Furniture' },
+            { id: '11', title: 'Decor' }
+          ])
+        }
+      } else {
+        // Fallback to default categories
+        setCategories([
+          { id: '1', title: 'Electronics' },
+          { id: '2', title: 'Smartphones' },
+          { id: '3', title: 'Laptops' },
+          { id: '4', title: 'Tablets' },
+          { id: '5', title: 'Fashion' },
+          { id: '6', title: 'Men\'s Clothing' },
+          { id: '7', title: 'Women\'s Clothing' },
+          { id: '8', title: 'Accessories' },
+          { id: '9', title: 'Home & Garden' },
+          { id: '10', title: 'Furniture' },
+          { id: '11', title: 'Decor' }
+        ])
+      }
+    }
+  }, [])
 
   // Save products to localStorage whenever they change
   const saveProducts = (updatedProducts: Product[]) => {
@@ -594,8 +642,8 @@ export default function DashboardProductsPage() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-shop_dark_green"
           >
             <option value="all">All Categories</option>
-            {Array.from(new Set(products.map(p => p.category))).map(category => (
-              <option key={category} value={category}>{category}</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.title}>{category.title}</option>
             ))}
           </select>
           <button
@@ -656,8 +704,8 @@ export default function DashboardProductsPage() {
                 className="w-full px-4 py-2 border rounded-lg"
               >
                 <option value="">Select Category</option>
-                {Array.from(new Set(products.map(p => p.category))).map(category => (
-                  <option key={category} value={category}>{category}</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.title}>{category.title}</option>
                 ))}
               </select>
             </div>
