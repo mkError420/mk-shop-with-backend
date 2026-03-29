@@ -49,15 +49,30 @@ const DealDetailPage = () => {
 
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t) }, [])
   useEffect(() => {
-    fetch(`/api/deals/${id}`).then(r => r.json()).then(d => {
-      if (d?.data) {
-        console.log('Deal data loaded:', d.data)
-        console.log('Deal image:', d.data.image)
-        console.log('Deal images:', d.data.images)
-        setDeal(d.data)
+    // Try to get deals from localStorage first
+    if (typeof window !== 'undefined') {
+      const savedDeals = localStorage.getItem('dashboardDeals')
+      if (savedDeals) {
+        try {
+          const parsedDeals = JSON.parse(savedDeals)
+          const foundDeal = parsedDeals.find((d: any) => String(d.id) === id)
+          if (foundDeal) {
+            console.log('Deal data loaded from localStorage:', foundDeal)
+            setDeal(foundDeal)
+          } else {
+            setDeal(fallbackDeals.find((d: any) => String(d.id) === id))
+          }
+        } catch (error) {
+          console.error('Error loading deals from localStorage:', error)
+          setDeal(fallbackDeals.find((d: any) => String(d.id) === id))
+        }
+      } else {
+        setDeal(fallbackDeals.find((d: any) => String(d.id) === id))
       }
-      else setDeal(fallbackDeals.find((d: any) => String(d.id) === id))
-    }).catch(() => setDeal(fallbackDeals.find((d: any) => String(d.id) === id))).finally(() => setLoading(false))
+    } else {
+      setDeal(fallbackDeals.find((d: any) => String(d.id) === id))
+    }
+    setLoading(false)
   }, [id])
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full" /></div>

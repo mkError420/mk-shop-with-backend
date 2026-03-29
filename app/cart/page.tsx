@@ -68,23 +68,30 @@ const CartPage = () => {
     setCouponError('')
 
     try {
-      const response = await fetch(`/api/coupons?code=${encodeURIComponent(couponCode.trim())}`)
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          setCouponError('Invalid coupon code')
-        } else if (response.status === 400) {
-          setCouponError('Coupon is expired or inactive')
-        } else {
-          setCouponError('Failed to apply coupon')
+      // Try to get coupons from localStorage first
+      let coupon = null
+      if (typeof window !== 'undefined') {
+        const savedCoupons = localStorage.getItem('dashboardCoupons')
+        if (savedCoupons) {
+          try {
+            const parsedCoupons = JSON.parse(savedCoupons)
+            coupon = parsedCoupons.find((c: any) => 
+              c.code?.toLowerCase() === couponCode.trim().toLowerCase() && 
+              c.active
+            )
+          } catch (error) {
+            console.error('Error loading coupons from localStorage:', error)
+          }
         }
+      }
+
+      if (!coupon) {
+        setCouponError('Invalid coupon code')
         setDiscount(0)
         setAppliedCoupon(null)
         return
       }
 
-      const coupon = data.data || data
       console.log('Coupon validated:', coupon)
 
       // Check minimum amount requirement
