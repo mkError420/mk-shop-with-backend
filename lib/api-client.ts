@@ -1,4 +1,4 @@
-const BASE = typeof window !== 'undefined' ? '' : process.env.NEXTAUTH_URL || 'http://localhost:3001'
+const BASE = typeof window !== 'undefined' ? '' : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
 
 // Simple client-side cache
 const cache = new Map<string, { data: any; timestamp: number }>()
@@ -41,9 +41,7 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
   }
 
   const url = path.startsWith('http') ? path : `${BASE}/api${path}`
-  if (process.env.NODE_ENV === 'development' && path !== '/auth/me') {
-    console.log('fetchApi: Calling URL:', url)
-  }
+  console.log('fetchApi: Calling URL:', url, 'BASE:', BASE, 'path:', path)
   
   const res = await fetch(url, { ...options, credentials: 'include' })
   if (!res.ok) {
@@ -59,9 +57,7 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
   }
   const json = await res.json()
   const data = json.data ?? json
-  if (process.env.NODE_ENV === 'development') {
-    console.log('fetchApi: Response data length:', Array.isArray(data) ? data.length : 'not array')
-  }
+  console.log('fetchApi: Response data length:', Array.isArray(data) ? data.length : 'not array')
   
   // Cache successful GET requests
   if (!options || options.method === 'GET' || !options.method) {
