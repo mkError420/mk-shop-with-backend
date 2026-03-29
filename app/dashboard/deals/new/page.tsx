@@ -104,6 +104,7 @@ export default function NewDealPage() {
       }
       
       console.log('Creating new deal with data:', dealData)
+      console.log('API endpoint being called: /deals')
       
       const response = await api.deals.create(dealData)
       console.log('Create response:', response)
@@ -115,7 +116,23 @@ export default function NewDealPage() {
       router.push('/dashboard/deals')
     } catch (error: any) {
       console.error('Error creating deal:', error)
-      setError(error.message || 'Failed to create deal. Please try again.')
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        status: error.status,
+        statusText: error.statusText
+      })
+      
+      // Provide more specific error messages
+      if (error.message.includes('404')) {
+        setError('API endpoint not found. Please check if the server is running and the API route exists.')
+      } else if (error.message.includes('500')) {
+        setError('Server error occurred. Please try again later.')
+      } else if (error.message.includes('Failed to fetch')) {
+        setError('Network error. Please check your internet connection.')
+      } else {
+        setError(error.message || 'Failed to create deal. Please try again.')
+      }
     } finally { 
       setLoading(false) 
     }
