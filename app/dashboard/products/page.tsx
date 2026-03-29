@@ -158,7 +158,6 @@ export default function DashboardProductsPage() {
   })
   
   const [loading, setLoading] = useState(true)
-  const [categories, setCategories] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
@@ -172,6 +171,7 @@ export default function DashboardProductsPage() {
     price: '',
     originalPrice: '',
     category: '',
+    subcategory: '',
     description: '',
     stock: '',
     featured: false,
@@ -179,55 +179,88 @@ export default function DashboardProductsPage() {
     image: ''
   })
   const [imagePreview, setImagePreview] = useState<string>('')
+  const [mainCategories, setMainCategories] = useState<any[]>([])
+  const [subcategories, setSubcategories] = useState<any[]>([])
 
-  // Load categories from localStorage
+  // Load categories from localStorage and separate main/subcategories
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedCategories = localStorage.getItem('dashboardCategories')
       if (savedCategories) {
         try {
           const parsedCategories = JSON.parse(savedCategories)
-          // Extract all categories (both main and subcategories)
-          const allCategories = parsedCategories.flatMap((cat: any) => [
-            { id: cat.id, title: cat.title },
-            ...(cat.subcategories || []).map((sub: any) => ({ id: sub.id, title: sub.title }))
-          ])
-          setCategories(allCategories)
+          // Separate main categories and subcategories
+          const main = parsedCategories.map((cat: any) => ({
+            id: cat.id,
+            title: cat.title
+          }))
+          const sub = parsedCategories.flatMap((cat: any) => 
+            (cat.subcategories || []).map((sub: any) => ({
+              id: sub.id,
+              title: sub.title,
+              parentId: sub.parentId
+            }))
+          )
+          setMainCategories(main)
+          setSubcategories(sub)
         } catch (error) {
           console.error('Failed to load categories:', error)
           // Fallback to default categories
-          setCategories([
+          const defaultMain = [
             { id: '1', title: 'Electronics' },
-            { id: '2', title: 'Smartphones' },
-            { id: '3', title: 'Laptops' },
-            { id: '4', title: 'Tablets' },
             { id: '5', title: 'Fashion' },
-            { id: '6', title: 'Men\'s Clothing' },
-            { id: '7', title: 'Women\'s Clothing' },
-            { id: '8', title: 'Accessories' },
-            { id: '9', title: 'Home & Garden' },
-            { id: '10', title: 'Furniture' },
-            { id: '11', title: 'Decor' }
-          ])
+            { id: '9', title: 'Home & Garden' }
+          ]
+          const defaultSub = [
+            { id: '2', title: 'Smartphones', parentId: '1' },
+            { id: '3', title: 'Laptops', parentId: '1' },
+            { id: '4', title: 'Tablets', parentId: '1' },
+            { id: '6', title: 'Men\'s Clothing', parentId: '5' },
+            { id: '7', title: 'Women\'s Clothing', parentId: '5' },
+            { id: '8', title: 'Accessories', parentId: '5' },
+            { id: '10', title: 'Furniture', parentId: '9' },
+            { id: '11', title: 'Decor', parentId: '9' }
+          ]
+          setMainCategories(defaultMain)
+          setSubcategories(defaultSub)
         }
       } else {
         // Fallback to default categories
-        setCategories([
+        const defaultMain = [
           { id: '1', title: 'Electronics' },
-          { id: '2', title: 'Smartphones' },
-          { id: '3', title: 'Laptops' },
-          { id: '4', title: 'Tablets' },
           { id: '5', title: 'Fashion' },
-          { id: '6', title: 'Men\'s Clothing' },
-          { id: '7', title: 'Women\'s Clothing' },
-          { id: '8', title: 'Accessories' },
-          { id: '9', title: 'Home & Garden' },
-          { id: '10', title: 'Furniture' },
-          { id: '11', title: 'Decor' }
-        ])
+          { id: '9', title: 'Home & Garden' }
+        ]
+        const defaultSub = [
+          { id: '2', title: 'Smartphones', parentId: '1' },
+          { id: '3', title: 'Laptops', parentId: '1' },
+          { id: '4', title: 'Tablets', parentId: '1' },
+          { id: '6', title: 'Men\'s Clothing', parentId: '5' },
+          { id: '7', title: 'Women\'s Clothing', parentId: '5' },
+          { id: '8', title: 'Accessories', parentId: '5' },
+          { id: '10', title: 'Furniture', parentId: '9' },
+          { id: '11', title: 'Decor', parentId: '9' }
+        ]
+        setMainCategories(defaultMain)
+        setSubcategories(defaultSub)
       }
     }
   }, [])
+
+  // Get available subcategories when main category changes
+  const getAvailableSubcategories = () => {
+    if (!form.category) return []
+    const selectedMainCategory = mainCategories.find(cat => cat.title === form.category)
+    if (!selectedMainCategory) return []
+    return subcategories.filter(sub => sub.parentId === selectedMainCategory.id)
+  }
+
+  // Update subcategory when main category changes
+  useEffect(() => {
+    if (form.category) {
+      setForm(prev => ({ ...prev, subcategory: '' }))
+    }
+  }, [form.category])
 
   // Save products to localStorage whenever they change
   const saveProducts = (updatedProducts: Product[]) => {
@@ -295,7 +328,7 @@ export default function DashboardProductsPage() {
       name: form.name,
       price: parseFloat(form.price),
       originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : undefined,
-      category: form.category,
+      category: form.subcategory ? `${form.category} > ${form.subcategory}` : form.category,
       description: form.description,
       stock: parseInt(form.stock),
       featured: form.featured,
@@ -339,6 +372,7 @@ export default function DashboardProductsPage() {
       price: '',
       originalPrice: '',
       category: '',
+      subcategory: '',
       description: '',
       stock: '',
       featured: false,
@@ -356,6 +390,7 @@ export default function DashboardProductsPage() {
       price: product.price.toString(),
       originalPrice: product.originalPrice?.toString() || '',
       category: product.category,
+      subcategory: '', // We'll need to extract this from the category field
       description: product.description || '',
       stock: product.stock.toString(),
       featured: product.featured || false,
@@ -642,7 +677,7 @@ export default function DashboardProductsPage() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-shop_dark_green"
           >
             <option value="all">All Categories</option>
-            {categories.map(category => (
+            {mainCategories.map(category => (
               <option key={category.id} value={category.title}>{category.title}</option>
             ))}
           </select>
@@ -703,9 +738,25 @@ export default function DashboardProductsPage() {
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg"
               >
-                <option value="">Select Category</option>
-                {categories.map(category => (
+                <option value="">Select Main Category</option>
+                {mainCategories.map(category => (
                   <option key={category.id} value={category.title}>{category.title}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
+              <select
+                value={form.subcategory}
+                onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg"
+                disabled={!form.category}
+              >
+                <option value="">
+                  {form.category ? 'Select Subcategory (Optional)' : 'Select Main Category First'}
+                </option>
+                {getAvailableSubcategories().map(subcategory => (
+                  <option key={subcategory.id} value={subcategory.title}>{subcategory.title}</option>
                 ))}
               </select>
             </div>
