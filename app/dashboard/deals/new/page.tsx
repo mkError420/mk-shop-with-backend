@@ -113,6 +113,9 @@ export default function NewDealPage() {
         throw new Error('Invalid response from server')
       }
       
+      // Clear cache and refresh
+      api.clearCache()
+      
       router.push('/dashboard/deals')
     } catch (error: any) {
       console.error('Error creating deal:', error)

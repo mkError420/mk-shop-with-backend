@@ -72,26 +72,46 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
     // For deals endpoint, provide fallback data
     if (path === '/deals' && (!options || options.method === 'GET' || !options.method)) {
       console.log('fetchApi: Providing fallback deals data')
-      const fallbackDeals = [
-        {
-          id: "fallback-1",
-          title: "Super deal: Best Samsung phones",
-          originalPrice: 27900.9,
-          dealPrice: 24690.9,
-          discount: 12,
-          image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmdr-t7nODszaBxRZz-0_MUAl8dRo3oQFXCw&s",
-          category: "Electronics",
-          dealType: "lightning",
-          endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          stock: 10,
-          sold: 0,
-          rating: 4.5,
-          reviews: 25,
-          description: "The best Samsung phones with great features.",
-          features: ["Phone", "Offer", "Deal"],
-          freeShipping: true
+      
+      // Check localStorage first for saved deals
+      let fallbackDeals = []
+      if (typeof window !== 'undefined') {
+        const savedDeals = localStorage.getItem('fallbackDeals')
+        if (savedDeals) {
+          try {
+            fallbackDeals = JSON.parse(savedDeals)
+            console.log('Loaded deals from localStorage:', fallbackDeals.length)
+          } catch (e) {
+            console.error('Error parsing localStorage deals:', e)
+          }
         }
-      ]
+      }
+      
+      // If no saved deals, provide sample data
+      if (fallbackDeals.length === 0) {
+        fallbackDeals = [
+          {
+            id: "fallback-1",
+            title: "Super deal: Best Samsung phones",
+            originalPrice: 27900.9,
+            dealPrice: 24690.9,
+            discount: 12,
+            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmdr-t7nODszaBxRZz-0_MUAl8dRo3oQFXCw&s",
+            category: "Electronics",
+            dealType: "lightning",
+            endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            stock: 10,
+            sold: 0,
+            rating: 4.5,
+            reviews: 25,
+            description: "The best Samsung phones with great features.",
+            features: ["Phone", "Offer", "Deal"],
+            freeShipping: true,
+            createdAt: new Date().toISOString()
+          }
+        ]
+      }
+      
       return fallbackDeals as T
     }
     
@@ -152,15 +172,22 @@ export async function fetchApi<T>(path: string, options?: RequestInit): Promise<
     // For POST requests to deals, provide fallback success response
     if (path === '/deals' && options?.method === 'POST') {
       console.log('fetchApi: Providing fallback POST response for deals')
-      const mockResponse = {
-        success: true,
-        data: {
-          id: "mock-deal-" + Date.now(),
-          ...JSON.parse(options.body as string),
-          createdAt: new Date().toISOString()
-        }
+      const dealData = JSON.parse(options.body as string)
+      const newDeal = {
+        id: "fallback-deal-" + Date.now(),
+        ...dealData,
+        createdAt: new Date().toISOString()
       }
-      return mockResponse.data as T
+      
+      // Save to localStorage as fallback storage
+      if (typeof window !== 'undefined') {
+        const existingDeals = JSON.parse(localStorage.getItem('fallbackDeals') || '[]')
+        existingDeals.push(newDeal)
+        localStorage.setItem('fallbackDeals', JSON.stringify(existingDeals))
+        console.log('Saved deal to localStorage fallback:', newDeal)
+      }
+      
+      return newDeal as T
     }
     
     throw error
@@ -195,7 +222,25 @@ export const api = {
     get: (id: string) => fetchApi<any>(`/deals/${encodeURIComponent(id)}`),
     create: (data: any) => fetchApi<any>('/deals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetchApi<any>(`/deals/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
-    delete: (id: string) => fetchApi<any>(`/deals/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    delete: (id: string) => {
+      // Try to delete from localStorage fallback first
+      if (typeof window !== 'undefined') {
+        const savedDeals = localStorage.getItem('fallbackDeals')
+        if (savedDeals) {
+          try {
+            const deals = JSON.parse(savedDeals)
+            const updatedDeals = deals.filter((deal: any) => deal.id !== id)
+            localStorage.setItem('fallbackDeals', JSON.stringify(updatedDeals))
+            console.log('Deleted deal from localStorage:', id)
+            return { success: true }
+          } catch (e) {
+            console.error('Error deleting from localStorage:', e)
+          }
+        }
+      }
+      
+      return fetchApi<any>(`/deals/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    }
   },
   blog: {
     list: () => fetchApi<any[]>('/blog'),

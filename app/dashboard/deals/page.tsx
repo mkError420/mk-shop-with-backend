@@ -16,6 +16,10 @@ export default function DashboardDealsPage() {
     try {
       setLoading(true)
       setError('')
+      
+      // Clear cache to get fresh data
+      api.clearCache()
+      
       const response = await api.deals.list() as any
       console.log('Deals API Response:', response)
       
