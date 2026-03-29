@@ -334,42 +334,24 @@ export default function DashboardProductsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Validation
-    if (!form.name.trim()) {
-      alert('Please enter a product name')
-      return
-    }
-    if (!form.price || isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0) {
-      alert('Please enter a valid price')
-      return
-    }
-    if (!form.category.trim()) {
-      alert('Please select a category')
-      return
-    }
-    if (!form.stock || isNaN(parseInt(form.stock)) || parseInt(form.stock) < 0) {
-      alert('Please enter a valid stock quantity')
-      return
-    }
-    
-    console.log('Form data:', form)
-    
-    const productData: Product = {
-      id: editingProduct?.id || Date.now().toString(),
-      name: form.name.trim(),
-      price: parseFloat(form.price),
-      originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : undefined,
-      category: form.subcategory ? `${form.category} > ${form.subcategory}` : form.category,
-      description: form.description.trim(),
-      stock: parseInt(form.stock),
-      featured: form.featured,
-      badge: form.badge.trim(),
-      image: form.image
-    }
-    
-    console.log('Product data to save:', productData)
-    
     try {
+      alert('Starting product save process...')
+      
+      const productData: Product = {
+        id: editingProduct?.id || Date.now().toString(),
+        name: form.name || 'Test Product',
+        price: parseFloat(form.price) || 1000,
+        originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : undefined,
+        category: form.subcategory ? `${form.category} > ${form.subcategory}` : (form.category || 'Uncategorized'),
+        description: form.description || '',
+        stock: parseInt(form.stock) || 10,
+        featured: form.featured,
+        badge: form.badge || '',
+        image: form.image || 'https://example.com/product.jpg'
+      }
+      
+      alert('Product data created: ' + JSON.stringify(productData, null, 2))
+      
       let updatedProducts: Product[]
       
       if (editingProduct) {
@@ -384,10 +366,14 @@ export default function DashboardProductsPage() {
         updatedProducts = [...products, productData]
       }
       
-      console.log('Updated products array:', updatedProducts)
+      alert('Products array updated, saving to localStorage...')
       
       // Save to localStorage and update state
-      saveProducts(updatedProducts)
+      setProducts(updatedProducts)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dashboardProducts', JSON.stringify(updatedProducts))
+        alert('Products saved to localStorage successfully!')
+      }
       
       resetForm()
       setShowForm(false)
@@ -395,9 +381,9 @@ export default function DashboardProductsPage() {
       // Show success message
       alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
       
-    } catch (error) {
+    } catch (error: any) {
+      alert('Error details: ' + (error?.message || 'Unknown error'))
       console.error('Failed to save product:', error)
-      alert('Failed to save product. Please try again.')
     }
   }
 
