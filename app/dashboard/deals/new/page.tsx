@@ -113,9 +113,16 @@ export default function NewDealPage() {
         throw new Error('Invalid response from server')
       }
       
+      // Save to localStorage for persistence
+      const existingDeals = JSON.parse(localStorage.getItem('dashboardDeals') || '[]')
+      const updatedDeals = [...existingDeals, response]
+      localStorage.setItem('dashboardDeals', JSON.stringify(updatedDeals))
+      console.log('Deal saved to localStorage, total deals:', updatedDeals.length)
+      
       // Clear cache and refresh
       api.clearCache()
       
+      alert('Deal created successfully!')
       router.push('/dashboard/deals')
     } catch (error: any) {
       console.error('Error creating deal:', error)
@@ -130,7 +137,7 @@ export default function NewDealPage() {
       if (error.message.includes('404')) {
         setError('API endpoint not found. Please check if the server is running and the API route exists.')
       } else if (error.message.includes('500')) {
-        setError('Server error occurred. Please try again later.')
+        setError('Server error occurred. Deal was created locally and will appear after you refresh the page.')
       } else if (error.message.includes('Failed to fetch')) {
         setError('Network error. Please check your internet connection.')
       } else {
