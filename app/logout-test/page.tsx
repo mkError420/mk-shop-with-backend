@@ -26,10 +26,20 @@ export default function LogoutTestPage() {
       addLog('✅ Firebase auth available')
       addLog('Calling signOut...')
       
-      await signOut(auth)
-      
-      addLog('✅ Sign out successful')
-      setStatus('Logout successful!')
+      try {
+        await signOut(auth)
+        addLog('✅ Sign out successful')
+        setStatus('Logout successful!')
+      } catch (firebaseError: any) {
+        addLog(`⚠️ Firebase sign out failed: ${firebaseError.message}`)
+        addLog('🔄 Clearing browser storage as fallback...')
+        
+        // Fallback: clear storage manually
+        localStorage.clear()
+        sessionStorage.clear()
+        addLog('✅ Browser storage cleared')
+        setStatus('Logout completed with fallback method')
+      }
       
       // Redirect after 2 seconds
       setTimeout(() => {

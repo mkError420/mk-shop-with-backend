@@ -85,19 +85,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = async () => {
     try {
       console.log('Logging out...')
+      
+      // Try multiple logout methods
+      let logoutSuccessful = false
+      
       if (auth) {
-        await signOut(auth)
-        console.log('Firebase sign out successful')
+        try {
+          await signOut(auth)
+          console.log('Firebase sign out successful')
+          logoutSuccessful = true
+        } catch (firebaseError) {
+          console.warn('Firebase sign out failed:', firebaseError)
+        }
       }
-      // Clear any local storage/session data
+      
+      // Clear browser storage regardless of Firebase logout
       localStorage.clear()
       sessionStorage.clear()
+      
+      // Clear user state
+      setUser(null)
+      
       // Force redirect to login
+      console.log('Redirecting to login...')
       router.push('/dashboard/login')
       router.refresh()
+      
     } catch (error) {
       console.error('Logout error:', error)
-      // Still redirect even if logout fails
+      // Still clear everything and redirect even if logout fails
+      localStorage.clear()
+      sessionStorage.clear()
+      setUser(null)
       router.push('/dashboard/login')
     }
   }
