@@ -238,6 +238,7 @@ export default function DashboardProductsPage() {
     
     let response;
     let result;
+    let successHandled = false;
     
     try {
       const productData: Product = {
@@ -309,13 +310,27 @@ export default function DashboardProductsPage() {
         await fetchProducts()
         resetForm()
         setShowForm(false)
-        alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
+        
+        // Show success message and prevent any error from showing
+        successHandled = true
+        setTimeout(() => {
+          alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
+        }, 100)
+        
+        // Return immediately to prevent any error handling
+        return
       } else {
         console.error('API returned error:', result)
         alert('Error: ' + (result.error || result.message || 'Failed to save product'))
       }
       
     } catch (error: any) {
+      // If success was already handled, don't show error
+      if (successHandled) {
+        console.log('Success already handled, ignoring error:', error.message)
+        return
+      }
+      
       console.error('Failed to save product:', error)
       console.error('Response status:', response?.status)
       
