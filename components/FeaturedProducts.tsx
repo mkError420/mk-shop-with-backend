@@ -3,34 +3,46 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ProductCard from './ProductCard'
+import { productsService, Product } from '@/lib/firebase-services'
 
 const FeaturedProducts = () => {
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Try to get products from dashboard localStorage
+        setLoading(true)
+        console.log('Fetching featured products from Firebase...')
+        
+        // Try to get featured products from Firebase
+        const featuredProducts = await productsService.getFeatured()
+        
+        if (featuredProducts.length > 0) {
+          console.log('Featured products loaded from Firebase:', featuredProducts.length, 'items')
+          setProducts(featuredProducts)
+        } else {
+          // Fallback to latest products if no featured products
+          console.log('No featured products found, fetching latest products...')
+          const latestProducts = await productsService.getAll()
+          const productsToShow = latestProducts.slice(0, 8)
+          console.log('Latest products loaded from Firebase:', productsToShow.length, 'items')
+          setProducts(productsToShow)
+        }
+      } catch (error) {
+        console.error('Error loading products from Firebase:', error)
+        // Fallback to localStorage for now
         if (typeof window !== 'undefined') {
           const savedProducts = localStorage.getItem('dashboardProducts')
           if (savedProducts) {
             const parsedProducts = JSON.parse(savedProducts)
-            console.log('FeaturedProducts loaded from localStorage:', parsedProducts.length, 'items')
-            
-            // Filter for featured products or use latest products
-            const featuredProducts = parsedProducts.filter((product: any) => product.featured)
-            const productsToShow = featuredProducts.length > 0 ? featuredProducts : parsedProducts.slice(0, 8)
-            
-            setProducts(productsToShow)
+            console.log('Fallback: loaded from localStorage:', parsedProducts.length, 'items')
+            setProducts(parsedProducts.slice(0, 8))
           } else {
-            console.log('No products in localStorage')
+            console.log('No products available')
             setProducts([])
           }
         }
-      } catch (error) {
-        console.error('Error loading products from localStorage:', error)
-        setProducts([])
       } finally {
         setLoading(false)
       }
@@ -85,8 +97,8 @@ const FeaturedProducts = () => {
         {/* Products Grid */}
         {products.length > 0 ? (
           <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8'>
-            {products.slice(0, 8).map((product: any) => (
-              <ProductCard key={product.id} product={product} viewMode="grid" />
+            {products.slice(0, 8).map((product: Product) => (
+              <ProductCard key={product.id!} product={product} viewMode="grid" />
             ))}
           </div>
         ) : (

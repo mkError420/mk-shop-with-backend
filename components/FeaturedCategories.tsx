@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Smartphone, 
   Laptop, 
@@ -16,17 +16,7 @@ import {
   Star
 } from 'lucide-react'
 import Link from 'next/link'
-import { useCategories } from '@/hooks/useCategories'
-
-interface Category {
-  id: string
-  title: string
-  slug: string
-  href: string
-  parentId?: string
-  icon?: string
-  subcategories?: Category[]
-}
+import { categoriesService, Category } from '@/lib/firebase-services'
 
 // Icon mapping for categories
 const iconMap: { [key: string]: any } = {
@@ -61,7 +51,37 @@ const colorMap: { [key: string]: string } = {
 }
 
 const FeaturedCategories = () => {
-  const { categories, loading, error } = useCategories()
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoading(true)
+        const mainCategories = await categoriesService.getMainCategories()
+        console.log('Featured categories loaded from Firebase:', mainCategories.length, 'items')
+        setCategories(mainCategories.slice(0, 8)) // Show max 8 categories
+      } catch (error) {
+        console.error('Error loading categories from Firebase:', error)
+        // Fallback to default categories
+        const defaultCategories: Category[] = [
+          { id: '1', title: 'Electronics', slug: 'electronics', href: '/electronics' },
+          { id: '5', title: 'Fashion', slug: 'fashion', href: '/fashion' },
+          { id: '9', title: 'Home & Garden', slug: 'home-garden', href: '/home-garden' },
+          { id: '13', title: 'Books', slug: 'books', href: '/books' },
+          { id: '17', title: 'Health & Beauty', slug: 'health-beauty', href: '/health-beauty' },
+          { id: '21', title: 'Gaming', slug: 'gaming', href: '/gaming' },
+          { id: '25', title: 'Photography', slug: 'photography', href: '/photography' },
+          { id: '29', title: 'Appliances', slug: 'appliances', href: '/appliances' }
+        ]
+        setCategories(defaultCategories)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadCategories()
+  }, [])
 
   const displayCategories = categories.slice(0, 6)
 
@@ -79,10 +99,6 @@ const FeaturedCategories = () => {
   const getCategoryColor = (category: any) => {
     const slug = category.slug?.toLowerCase() || category.title?.toLowerCase()
     return colorMap[slug] || colorMap.default
-  }
-
-  if (error) {
-    console.error('Error loading categories:', error)
   }
 
   return (
@@ -114,9 +130,9 @@ const FeaturedCategories = () => {
                 <div className='bg-white rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 text-center shadow hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-shop_dark_green hover:bg-gradient-to-br hover:from-shop_light_green/5 hover:to-shop_dark_green/5 h-full flex flex-col justify-between min-h-[140px] sm:min-h-[160px] md:min-h-[180px] group cursor-pointer'>
                   <div className='flex-1 flex flex-col items-center justify-center'>
                     <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl ${color} mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300`}>
-                      {category.icon ? (
+                      {(category as any).icon ? (
                         <img 
-                          src={category.icon as string} 
+                          src={(category as any).icon as string} 
                           alt={category.title}
                           className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded object-cover"
                         />

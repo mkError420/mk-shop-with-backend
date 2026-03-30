@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithEmailAndPassword, onAuthStateChanged, auth } from '@/lib/firebase'
+import { authService, AdminUser } from '@/lib/firebase-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,20 +12,14 @@ export default function DashboardLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<AdminUser | null>(null)
 
   useEffect(() => {
     const checkAuth = () => {
       try {
-        if (!auth) {
-          console.warn('Firebase auth not available')
-          setError('Firebase authentication not configured properly')
-          return
-        }
-        
-        const unsubscribe = onAuthStateChanged(auth, (user: any) => {
-          if (user) {
-            setUser(user)
+        const unsubscribe = authService.onAuthStateChanged((authUser) => {
+          if (authUser) {
+            setUser(authUser)
             router.push('/dashboard')
           }
         })
@@ -47,16 +41,11 @@ export default function DashboardLoginPage() {
     setError('')
     setLoading(true)
     try {
-      if (!auth) {
-        throw new Error('Firebase authentication not available')
-      }
-      
       console.log('Attempting login with:', email)
-      const result = await signInWithEmailAndPassword(auth, email, password)
-      console.log('Login successful:', result.user.email)
+      const authUser = await authService.signIn(email, password)
+      console.log('Login successful:', authUser.email)
       
-      // Clear any previous auth state
-      setUser(null)
+      setUser(authUser)
       
       // Wait for auth state to update, then redirect
       setTimeout(() => {

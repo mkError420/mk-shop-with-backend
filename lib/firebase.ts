@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, collection, doc, addDoc, getDocs, getDoc, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot as fsOnSnapshot } from 'firebase/firestore'
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 
 // Firebase configuration
 const getFirebaseConfig = () => {
@@ -28,6 +29,7 @@ const shouldInitializeFirebase = () => {
 let app: any = null
 let authInstance: any = null
 let dbInstance: any = null
+let storageInstance: any = null
 
 const initializeFirebase = () => {
   if (app || !shouldInitializeFirebase()) return app
@@ -43,11 +45,13 @@ const initializeFirebase = () => {
     app = (!getApps().length || !getApps()[0]) ? initializeApp(config) : getApps()[0]
     authInstance = app ? getAuth(app) : null
     dbInstance = app ? getFirestore(app) : null
+    storageInstance = app ? getStorage(app) : null
     
     console.log('Firebase initialized successfully:', { 
       hasApp: !!app, 
       hasAuth: !!authInstance, 
-      hasDb: !!dbInstance 
+      hasDb: !!dbInstance,
+      hasStorage: !!storageInstance
     })
   } catch (error) {
     console.warn('Firebase initialization failed:', error)
@@ -95,5 +99,49 @@ export const db = new Proxy({}, {
     return dbInstance && prop in dbInstance
   }
 }) as any
+
+export const storage = new Proxy({}, {
+  get(target, prop) {
+    if (!storageInstance) {
+      initializeFirebase()
+      // If still not initialized after trying, return null
+      if (!storageInstance) {
+        console.warn('Firebase storage not available after initialization attempt')
+        return null
+      }
+    }
+    return storageInstance?.[prop]
+  },
+  has(target, prop) {
+    if (!storageInstance) {
+      initializeFirebase()
+    }
+    return storageInstance && prop in storageInstance
+  }
+}) as any
+
+// Export Firestore functions
+export { 
+  collection, 
+  doc, 
+  addDoc, 
+  getDocs, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  fsOnSnapshot 
+}
+
+// Export Storage functions
+export { 
+  ref, 
+  uploadBytes, 
+  getDownloadURL, 
+  deleteObject 
+}
 
 export { signInWithEmailAndPassword, signOut, onAuthStateChanged }

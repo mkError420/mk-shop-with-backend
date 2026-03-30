@@ -4,16 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react'
-import { api } from '@/lib/api-client'
-
-interface Category {
-  id: string
-  title: string
-  slug: string
-  href: string
-  parentId?: string
-  subcategories?: Category[]
-}
+import { productsService, categoriesService, Product, Category } from '@/lib/firebase-services'
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -37,18 +28,25 @@ export default function NewProductPage() {
   const [selectedCategory, setSelectedCategory] = useState('')
 
   useEffect(() => {
-    api.categories.list().then((data: Category[]) => {
-      // Build hierarchical structure
-      const mainCategories = data.filter(cat => !cat.parentId)
-      const subcategories = data.filter(cat => cat.parentId)
-      
-      const structuredCategories = mainCategories.map(main => ({
-        ...main,
-        subcategories: subcategories.filter(sub => sub.parentId === main.id)
-      }))
-      
-      setCategories(structuredCategories)
-    })
+    const loadCategories = async () => {
+      try {
+        const mainCats = await categoriesService.getMainCategories()
+        const structuredCategories = await Promise.all(
+          mainCats.map(async (main) => {
+            const subs = await categoriesService.getSubcategories(main.id!)
+            return {
+              ...main,
+              subcategories: subs
+            }
+          })
+        )
+        setCategories(structuredCategories)
+      } catch (error) {
+        console.error('Failed to load categories:', error)
+      }
+    }
+    
+    loadCategories()
   }, [])
 
   const toggleExpanded = (categoryId: string) => {
@@ -71,7 +69,7 @@ export default function NewProductPage() {
         </option>
       )
       
-      if (expandedCategories.has(category.id) && category.subcategories) {
+      if (expandedCategories.has(category.id!) && category.subcategories) {
         options.push(...renderCategoryOptions(category.subcategories, level + 1))
       }
     })
@@ -86,14 +84,24 @@ export default function NewProductPage() {
       // Determine the final category value
       const finalCategory = form.subcategory || form.mainCategory
       
-      await api.products.create({
-        ...form,
+      await productsService.create({
+        name: form.name,
         price: parseFloat(form.price),
         originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : undefined,
+        image: form.image,
+        images: form.images.filter(img => img.trim() !== ''), // Filter out empty images
         category: finalCategory,
-        images: form.images.filter(img => img.trim() !== '') // Filter out empty images
+        description: form.description,
+        badge: form.badge,
+        rating: parseFloat(form.rating),
+        reviews: parseInt(form.reviews),
+        stock: 0, // Default stock
+        featured: false
       })
       router.push('/dashboard/products')
+    } catch (error) {
+      console.error('Failed to create product:', error)
+      alert('Failed to create product. Please try again.')
     } finally { 
       setLoading(false) 
     }
@@ -157,7 +165,7 @@ export default function NewProductPage() {
                   if (selectedMainCategory) {
                     const category = categories.find(cat => cat.title === selectedMainCategory)
                     if (category && category.subcategories && category.subcategories.length > 0) {
-                      setExpandedCategories(new Set([category.id]))
+                      setExpandedCategories(new Set([category.id!]))
                     }
                   }
                 }} 
@@ -209,10 +217,10 @@ export default function NewProductPage() {
                       type="button"
                       onClick={() => {
                         const newExpanded = new Set(expandedCategories)
-                        if (newExpanded.has(category.id)) {
-                          newExpanded.delete(category.id)
+                        if (newExpanded.has(category.id!)) {
+                          newExpanded.delete(category.id!)
                         } else {
-                          newExpanded.add(category.id)
+                          newExpanded.add(category.id!)
                         }
                         setExpandedCategories(newExpanded)
                         // Auto-select this category if it's not selected
@@ -221,12 +229,12 @@ export default function NewProductPage() {
                         }
                       }}
                       className={`p-1 rounded text-xs transition-colors ${
-                        expandedCategories.has(category.id) 
+                        expandedCategories.has(category.id!) 
                           ? 'bg-shop_dark_green text-white' 
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      {expandedCategories.has(category.id) ? 
+                      {expandedCategories.has(category.id!) ? 
                         <ChevronDown className="w-3 h-3" /> : 
                         <ChevronRight className="w-3 h-3" />
                       }

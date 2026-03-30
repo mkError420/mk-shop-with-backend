@@ -3,23 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, Trash2, Filter, Search, Download, ChevronDown, Package, AlertCircle, TrendingUp, TrendingDown, PieChart, BarChart3, DollarSign, ShoppingCart, Archive, Tag, Upload, X, Eye } from 'lucide-react'
-
-interface Product {
-  id: string
-  name: string
-  price: number
-  originalPrice?: number
-  image: string
-  rating?: number
-  reviews?: number
-  badge?: string
-  category: string
-  description?: string
-  size?: string
-  stock: number
-  featured?: boolean
-  images?: string[]
-}
+import { productsService, categoriesService, Product, Category } from '@/lib/firebase-services'
 
 export default function DashboardProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -45,72 +29,48 @@ export default function DashboardProductsPage() {
     image: ''
   })
   const [imagePreview, setImagePreview] = useState<string>('')
-  const [mainCategories, setMainCategories] = useState<any[]>([])
-  const [subcategories, setSubcategories] = useState<any[]>([])
+  const [mainCategories, setMainCategories] = useState<Category[]>([])
+  const [subcategories, setSubcategories] = useState<Category[]>([])
 
-  // Load categories from localStorage and separate main/subcategories
+  // Load categories from Firebase
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedCategories = localStorage.getItem('dashboardCategories')
-      if (savedCategories) {
-        try {
-          const parsedCategories = JSON.parse(savedCategories)
-          // Separate main categories and subcategories
-          const main = parsedCategories.map((cat: any) => ({
-            id: cat.id,
-            title: cat.title
-          }))
-          const sub = parsedCategories.flatMap((cat: any) => 
-            (cat.subcategories || []).map((sub: any) => ({
-              id: sub.id,
-              title: sub.title,
-              parentId: sub.parentId
-            }))
-          )
-          setMainCategories(main)
-          setSubcategories(sub)
-        } catch (error) {
-          console.error('Failed to load categories:', error)
-          // Fallback to default categories
-          const defaultMain = [
-            { id: '1', title: 'Electronics' },
-            { id: '5', title: 'Fashion' },
-            { id: '9', title: 'Home & Garden' }
-          ]
-          const defaultSub = [
-            { id: '2', title: 'Smartphones', parentId: '1' },
-            { id: '3', title: 'Laptops', parentId: '1' },
-            { id: '4', title: 'Tablets', parentId: '1' },
-            { id: '6', title: 'Men\'s Clothing', parentId: '5' },
-            { id: '7', title: 'Women\'s Clothing', parentId: '5' },
-            { id: '8', title: 'Accessories', parentId: '5' },
-            { id: '10', title: 'Furniture', parentId: '9' },
-            { id: '11', title: 'Decor', parentId: '9' }
-          ]
-          setMainCategories(defaultMain)
-          setSubcategories(defaultSub)
+    const loadCategories = async () => {
+      try {
+        const mainCats = await categoriesService.getMainCategories()
+        const allSubCats: Category[] = []
+        
+        // Load subcategories for each main category
+        for (const mainCat of mainCats) {
+          const subs = await categoriesService.getSubcategories(mainCat.id!)
+          allSubCats.push(...subs)
         }
-      } else {
+        
+        setMainCategories(mainCats)
+        setSubcategories(allSubCats)
+      } catch (error) {
+        console.error('Failed to load categories:', error)
         // Fallback to default categories
-        const defaultMain = [
-          { id: '1', title: 'Electronics' },
-          { id: '5', title: 'Fashion' },
-          { id: '9', title: 'Home & Garden' }
+        const defaultMain: Category[] = [
+          { id: '1', title: 'Electronics', slug: 'electronics', href: '/electronics' },
+          { id: '5', title: 'Fashion', slug: 'fashion', href: '/fashion' },
+          { id: '9', title: 'Home & Garden', slug: 'home-garden', href: '/home-garden' }
         ]
-        const defaultSub = [
-          { id: '2', title: 'Smartphones', parentId: '1' },
-          { id: '3', title: 'Laptops', parentId: '1' },
-          { id: '4', title: 'Tablets', parentId: '1' },
-          { id: '6', title: 'Men\'s Clothing', parentId: '5' },
-          { id: '7', title: 'Women\'s Clothing', parentId: '5' },
-          { id: '8', title: 'Accessories', parentId: '5' },
-          { id: '10', title: 'Furniture', parentId: '9' },
-          { id: '11', title: 'Decor', parentId: '9' }
+        const defaultSub: Category[] = [
+          { id: '2', title: 'Smartphones', slug: 'smartphones', href: '/smartphones', parentId: '1' },
+          { id: '3', title: 'Laptops', slug: 'laptops', href: '/laptops', parentId: '1' },
+          { id: '4', title: 'Tablets', slug: 'tablets', href: '/tablets', parentId: '1' },
+          { id: '6', title: 'Men\'s Clothing', slug: 'mens-clothing', href: '/mens-clothing', parentId: '5' },
+          { id: '7', title: 'Women\'s Clothing', slug: 'womens-clothing', href: '/womens-clothing', parentId: '5' },
+          { id: '8', title: 'Accessories', slug: 'accessories', href: '/accessories', parentId: '5' },
+          { id: '10', title: 'Furniture', slug: 'furniture', href: '/furniture', parentId: '9' },
+          { id: '11', title: 'Decor', slug: 'decor', href: '/decor', parentId: '9' }
         ]
         setMainCategories(defaultMain)
         setSubcategories(defaultSub)
       }
     }
+    
+    loadCategories()
   }, [])
 
   // Get available subcategories when main category changes
@@ -182,25 +142,17 @@ export default function DashboardProductsPage() {
     }))
   }, [products])
 
-  // Fetch products from API and localStorage
+  // Fetch products from Firebase
   const fetchProducts = async () => {
     try {
-      console.log('Fetching products from API...')
-      const response = await fetch('/api/products')
-      const result = await response.json()
-      
-      if (result.success && result.data) {
-        console.log('Products fetched successfully:', result.data.length, 'items')
-        setProducts(result.data)
-      } else {
-        console.error('Failed to fetch products:', result)
-        // Fallback to localStorage
-        const localProducts = JSON.parse(localStorage.getItem('dashboardProducts') || '[]')
-        setProducts(localProducts)
-      }
+      setLoading(true)
+      console.log('Fetching products from Firebase...')
+      const productsData = await productsService.getAll()
+      console.log('Products fetched successfully:', productsData.length, 'items')
+      setProducts(productsData)
     } catch (error) {
-      console.error('Error fetching products:', error)
-      // Fallback to localStorage
+      console.error('Error fetching products from Firebase:', error)
+      // Fallback to localStorage for now
       const localProducts = JSON.parse(localStorage.getItem('dashboardProducts') || '[]')
       setProducts(localProducts)
     } finally {
@@ -236,13 +188,8 @@ export default function DashboardProductsPage() {
       return
     }
     
-    let response;
-    let result;
-    let successHandled = false;
-    
     try {
-      const productData: Product = {
-        id: editingProduct?.id || Date.now().toString(),
+      const productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
         name: form.name.trim(),
         price: parseFloat(form.price),
         originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : undefined,
@@ -259,108 +206,37 @@ export default function DashboardProductsPage() {
       if (editingProduct) {
         // Update existing product
         console.log('Updating product with ID:', editingProduct.id)
-        response = await fetch(`/api/products?id=${editingProduct.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(productData),
-        })
+        await productsService.update(editingProduct.id!, productData)
+        console.log('Product updated successfully')
       } else {
         // Create new product
         console.log('Creating new product')
-        response = await fetch('/api/products', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(productData),
-        })
+        await productsService.create(productData)
+        console.log('Product created successfully')
       }
       
-      // Check if response is OK and is JSON
-      if (!response.ok) {
-        console.error('Response not OK:', response.status, response.statusText)
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      // Refresh products list
+      await fetchProducts()
+      resetForm()
+      setShowForm(false)
       
-      const contentType = response.headers.get('content-type')
-      console.log('Content-Type:', contentType)
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text()
-        console.error('Non-JSON response:', text.substring(0, 100))
-        throw new Error(`Expected JSON response, got: ${text.substring(0, 100)}...`)
-      }
-      
-      result = await response.json()
-      console.log('API Response:', result)
-      
-      if (result.success) {
-        console.log('Product creation successful, saving to localStorage...')
-        // Save to localStorage for persistence
-        const existingProducts = JSON.parse(localStorage.getItem('dashboardProducts') || '[]')
-        const updatedProducts = editingProduct 
-          ? existingProducts.map((p: Product) => p.id === result.data.id ? result.data : p)
-          : [...existingProducts, result.data]
-        localStorage.setItem('dashboardProducts', JSON.stringify(updatedProducts))
-        console.log('Saved to localStorage, total products:', updatedProducts.length)
-        
-        // Refresh products list
-        await fetchProducts()
-        resetForm()
-        setShowForm(false)
-        
-        // Show success message and prevent any error from showing
-        successHandled = true
-        setTimeout(() => {
-          alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
-        }, 100)
-        
-        // Return immediately to prevent any error handling
-        return
-      } else {
-        console.error('API returned error:', result)
-        alert('Error: ' + (result.error || result.message || 'Failed to save product'))
-      }
+      // Show success message
+      setTimeout(() => {
+        alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
+      }, 100)
       
     } catch (error: any) {
-      // If success was already handled, don't show error
-      if (successHandled) {
-        console.log('Success already handled, ignoring error:', error.message)
-        return
-      }
-      
       console.error('Failed to save product:', error)
-      console.error('Response status:', response?.status)
-      
-      if (response) {
-        try {
-          const responseText = await response.text()
-          console.error('Response text:', responseText.substring(0, 200))
-        } catch (e) {
-          console.error('Could not read response text')
-        }
-      }
-      
-      // Check if this is actually a success case (product was created but there was a follow-up error)
-      if (error.message.includes('HTTP error! status: 500') && error.message.includes('localStorage fallback')) {
-        // This is actually a success case with fallback
-        alert('Product added successfully! (Saved in browser storage)')
-        return
-      }
       
       // User-friendly error messages
       let errorMessage = 'Failed to save product. Please try again.'
       
-      if (error.message.includes('HTTP error! status: 500')) {
-        errorMessage = 'Server error occurred. Product was created locally and will appear after you refresh the page.'
-      } else if (error.message.includes('HTTP error! status: 400')) {
-        errorMessage = 'Invalid product data. Please check all required fields.'
-      } else if (error.message.includes('HTTP error! status: 404')) {
-        errorMessage = 'Product not found or API endpoint missing.'
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = 'Network error. Please check your internet connection.'
+      if (error.message.includes('permission-denied')) {
+        errorMessage = 'Permission denied. Please check your Firebase permissions.'
+      } else if (error.message.includes('unavailable')) {
+        errorMessage = 'Firebase is unavailable. Please check your internet connection.'
+      } else if (error.message.includes('unauthenticated')) {
+        errorMessage = 'You are not authenticated. Please log in again.'
       }
       
       alert(errorMessage + '\n\nError details: ' + error.message)
@@ -406,19 +282,10 @@ export default function DashboardProductsPage() {
     if (!confirm(`Delete "${name}"? This action cannot be undone.`)) return
     
     try {
-      const response = await fetch(`/api/products?id=${id}`, {
-        method: 'DELETE',
-      })
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        // Refresh products list
-        await fetchProducts()
-        alert('Product deleted successfully!')
-      } else {
-        alert('Error: ' + (result.message || 'Failed to delete product'))
-      }
+      await productsService.delete(id)
+      // Refresh products list
+      await fetchProducts()
+      alert('Product deleted successfully!')
     } catch (error) {
       console.error('Failed to delete product:', error)
       alert('Error: Failed to delete product. Please try again.')
@@ -434,27 +301,12 @@ export default function DashboardProductsPage() {
       const product = products.find(p => p.id === productId)
       if (!product) return
       
-      const response = await fetch(`/api/products?id=${productId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...product,
-          stock
-        }),
-      })
+      await productsService.update(productId, { stock })
       
-      const result = await response.json()
-      
-      if (result.success) {
-        // Refresh products list
-        await fetchProducts()
-        setStockUpdates(prev => ({ ...prev, [productId]: '' }))
-        alert('Stock updated successfully!')
-      } else {
-        alert('Error: ' + (result.message || 'Failed to update stock'))
-      }
+      // Refresh products list
+      await fetchProducts()
+      setStockUpdates(prev => ({ ...prev, [productId]: '' }))
+      alert('Stock updated successfully!')
     } catch (error) {
       console.error('Failed to update stock:', error)
       alert('Error: Failed to update stock. Please try again.')
@@ -963,14 +815,14 @@ export default function DashboardProductsPage() {
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        value={stockUpdates[product.id] !== undefined ? stockUpdates[product.id] : product.stock}
-                        onChange={(e) => setStockUpdates(prev => ({ ...prev, [product.id]: e.target.value }))}
+                        value={stockUpdates[product.id!] !== undefined ? stockUpdates[product.id!] : product.stock}
+                        onChange={(e) => setStockUpdates(prev => ({ ...prev, [product.id!]: e.target.value }))}
                         className="w-20 px-2 py-1 border rounded"
                         disabled={updatingStock === product.id}
                       />
-                      {stockUpdates[product.id] !== undefined && stockUpdates[product.id] !== product.stock.toString() && (
+                      {stockUpdates[product.id!] !== undefined && stockUpdates[product.id!] !== product.stock.toString() && (
                         <button
-                          onClick={() => handleStockUpdate(product.id, stockUpdates[product.id])}
+                          onClick={() => handleStockUpdate(product.id!, stockUpdates[product.id!])}
                           className="text-green-600 hover:text-green-700"
                           disabled={updatingStock === product.id}
                         >
@@ -996,7 +848,7 @@ export default function DashboardProductsPage() {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(product.id, product.name)}
+                        onClick={() => handleDelete(product.id!, product.name)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-lg transition-all duration-200 text-sm font-medium"
                         title="Delete Product"
                       >

@@ -6,19 +6,7 @@ import Link from 'next/link'
 import { Star, Heart, ShoppingCart, Eye, X } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { useSlideCart } from '@/contexts/SlideCartContext'
-
-interface Product {
-  id: number | string
-  name: string
-  price: number
-  originalPrice?: number
-  image: string
-  rating?: number
-  reviews?: number
-  badge?: string
-  category?: string
-  description?: string
-}
+import { Product } from '@/lib/firebase-services'
 
 interface ProductCardProps {
   product: Product
@@ -32,16 +20,13 @@ const ProductCard = ({ product, viewMode }: ProductCardProps) => {
   const [showQuickView, setShowQuickView] = useState(false)
   const discountPercentage = Math.round(((product.originalPrice || product.price) - product.price) / (product.originalPrice || product.price) * 100)
   
-  // Handle both number and string IDs - keep string IDs as they are
-  const productId = product.id
-  
   // Skip rendering if product has no ID
-  if (!productId) {
+  if (!product.id) {
     console.error('ProductCard: Product has no ID, skipping:', product.name, 'ID:', product.id)
     return null
   }
   
-  console.log('ProductCard rendering for product:', product.name, 'ID:', productId, 'Type:', typeof product.id) // Debug log
+  console.log('ProductCard rendering for product:', product.name, 'ID:', product.id, 'Type:', typeof product.id) // Debug log
 
   // Function to get image URL without cache-busting for SSR consistency
   const getImageUrl = (imageUrl: string | undefined): string => {
@@ -51,25 +36,23 @@ const ProductCard = ({ product, viewMode }: ProductCardProps) => {
   }
   
   const handleAddToCart = () => {
-    // Double-check productId before adding to cart
-    if (!productId) {
-      console.error('Cannot add to cart: Invalid product ID', { product, productId })
+    // Double-check product.id before adding to cart
+    if (!product.id) {
+      console.error('Cannot add to cart: Product has no ID')
       return
     }
     
-    console.log('Add to Cart button clicked for product:', product.name, 'ID:', productId) // Debug log
-    console.log('Product object:', product) // Debug log
-    const productToAdd = {
-      ...product,
-      id: productId,
-      originalPrice: product.originalPrice || product.price,
-      rating: product.rating || 0,
-      reviews: product.reviews || 0,
-      badge: product.badge || '',
-      category: product.category || '',
-      description: product.description || ''
+    console.log('Adding to cart:', product.name, 'ID:', product.id)
+    
+    const cartItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: getImageUrl(product.image),
+      quantity: 1
     }
-    addToCart(productToAdd, 'product')
+    
+    addToCart(cartItem)
     openSlideCart()
   }
 
@@ -83,7 +66,7 @@ const ProductCard = ({ product, viewMode }: ProductCardProps) => {
       // Add to wishlist
       const wishlistItem = {
         ...product,
-        id: productId,
+        id: product.id,
         addedDate: new Date().toISOString()
       }
       const updatedWishlist = [...currentWishlist, wishlistItem]
@@ -91,7 +74,7 @@ const ProductCard = ({ product, viewMode }: ProductCardProps) => {
       console.log('Added to wishlist:', product.name)
     } else {
       // Remove from wishlist
-      const updatedWishlist = currentWishlist.filter((item: any) => item.id !== productId)
+      const updatedWishlist = currentWishlist.filter((item: any) => item.id !== product.id)
       localStorage.setItem('wishlist_items', JSON.stringify(updatedWishlist))
       console.log('Removed from wishlist:', product.name)
     }
@@ -109,9 +92,9 @@ const ProductCard = ({ product, viewMode }: ProductCardProps) => {
   // Check if product is already in wishlist on component mount
   useEffect(() => {
     const currentWishlist = JSON.parse(localStorage.getItem('wishlist_items') || '[]')
-    const isInWishlist = currentWishlist.some((item: any) => item.id === productId)
+    const isInWishlist = currentWishlist.some((item: any) => item.id === product.id)
     setIsInWishlist(isInWishlist)
-  }, [productId])
+  }, [product.id])
 
   if (viewMode === 'list') {
     return (
