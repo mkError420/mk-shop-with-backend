@@ -22,8 +22,21 @@ const shouldInitializeFirebase = () => {
 }
 
 // Initialize Firebase
-const app = shouldInitializeFirebase() && !getApps().length ? initializeApp(firebaseConfig) : (getApps()[0] || null)
-export const auth = app ? getAuth(app) : null
-export const db = app ? getFirestore(app) : null
+let app: any = null
+let authInstance: any = null
+let dbInstance: any = null
+
+if (typeof window !== 'undefined') {
+  try {
+    app = (!getApps().length || !getApps()[0]) ? initializeApp(firebaseConfig) : getApps()[0]
+    authInstance = app ? getAuth(app) : null
+    dbInstance = app ? getFirestore(app) : null
+  } catch (error) {
+    console.warn('Firebase initialization failed:', error)
+  }
+}
+
+export const auth = authInstance
+export const db = dbInstance
 
 export { signInWithEmailAndPassword, signOut, onAuthStateChanged }

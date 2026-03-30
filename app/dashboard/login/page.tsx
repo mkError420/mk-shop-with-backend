@@ -15,7 +15,11 @@ export default function DashboardLoginPage() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth!, (user: any) => {
+    if (!auth) {
+      console.warn('Firebase auth not initialized')
+      return
+    }
+    const unsubscribe = onAuthStateChanged(auth, (user: any) => {
       if (user) {
         setUser(user)
         router.push('/dashboard')
@@ -29,7 +33,10 @@ export default function DashboardLoginPage() {
     setError('')
     setLoading(true)
     try {
-      await signInWithEmailAndPassword(auth!, email, password)
+      if (!auth) {
+        throw new Error('Firebase auth not initialized')
+      }
+      await signInWithEmailAndPassword(auth, email, password)
       router.push('/dashboard')
       router.refresh()
     } catch (err: any) {

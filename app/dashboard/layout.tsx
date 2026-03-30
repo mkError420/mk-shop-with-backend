@@ -16,7 +16,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
-    if (!auth) return
+    if (!auth) {
+      console.warn('Firebase auth not initialized')
+      setLoading(false)
+      if (pathname !== '/dashboard/login') {
+        router.push('/dashboard/login')
+      }
+      return
+    }
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser({ email: firebaseUser.email || '' })

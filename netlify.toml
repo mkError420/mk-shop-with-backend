@@ -32,8 +32,89 @@
   status = 200
 
 [[redirects]]
+  from = "/api/auth/logout"
+  to = "/.netlify/functions/api-auth-logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/me"
+  to = "/.netlify/functions/api-auth-me"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "/.netlify/functions/api-auth-register"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/verify"
+  to = "/.netlify/functions/api-auth-verify"
+  status = 200
+
+[[redirects]]
   from = "/api/auth/*"
   to = "/.netlify/functions/api-auth-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/banners"
+  to = "/.netlify/functions/api-banners"
+  status = 200
+
+[[redirects]]
+  from = "/api/blog"
+  to = "/.netlify/functions/api-blog"
+  status = 200
+
+[[redirects]]
+  from = "/api/blog/*"
+  to = "/.netlify/functions/api-blog"
+  status = 200
+
+[[redirects]]
+  from = "/api/coupons"
+  to = "/.netlify/functions/api-coupons"
+  status = 200
+
+[[redirects]]
+  from = "/api/deals"
+  to = "/.netlify/functions/api-deals"
+  status = 200
+
+[[redirects]]
+  from = "/api/deals/*"
+  to = "/.netlify/functions/api-deals"
+  status = 200
+
+[[redirects]]
+  from = "/api/orders"
+  to = "/.netlify/functions/api-orders"
+  status = 200
+
+[[redirects]]
+  from = "/api/orders/*"
+  to = "/.netlify/functions/api-orders"
+  status = 200
+
+[[redirects]]
+  from = "/api/placeholder"
+  to = "/.netlify/functions/api-placeholder"
+  status = 200
+
+[[redirects]]
+  from = "/api/proxy-image"
+  to = "/.netlify/functions/api-proxy-image"
+  status = 200
+
+[[redirects]]
+  from = "/api/test"
+  to = "/.netlify/functions/api-test"
+  status = 200
+
+# Catch-all for any other API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
   status = 200
 
 # SPA fallback
