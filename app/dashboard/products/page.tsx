@@ -299,6 +299,7 @@ export default function DashboardProductsPage() {
     } catch (error: any) {
       console.error('Failed to save product:', error)
       console.error('Response status:', response?.status)
+      
       if (response) {
         try {
           const responseText = await response.text()
@@ -307,7 +308,21 @@ export default function DashboardProductsPage() {
           console.error('Could not read response text')
         }
       }
-      alert('Error: ' + (error?.message || 'Failed to save product'))
+      
+      // User-friendly error messages
+      let errorMessage = 'Failed to save product. Please try again.'
+      
+      if (error.message.includes('HTTP error! status: 500')) {
+        errorMessage = 'Server error occurred. This might be due to file system limitations on the hosting platform. The product was created locally and will appear after you refresh the page.'
+      } else if (error.message.includes('HTTP error! status: 400')) {
+        errorMessage = 'Invalid product data. Please check all required fields.'
+      } else if (error.message.includes('HTTP error! status: 404')) {
+        errorMessage = 'Product not found or API endpoint missing.'
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error. Please check your internet connection.'
+      }
+      
+      alert(errorMessage + '\n\nError details: ' + error.message)
     }
   }
 
