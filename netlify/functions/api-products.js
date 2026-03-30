@@ -11,10 +11,15 @@ const getDb = async () => {
   if (dbCache) return dbCache
   
   try {
+    console.log('Attempting to read database from:', DB_PATH)
+    
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf-8')
+      console.log('Database file found, parsing...')
       dbCache = JSON.parse(data)
+      console.log('Database loaded successfully, products count:', dbCache.products?.length || 0)
     } else {
+      console.log('Database file not found, creating default data...')
       // Create default data if file doesn't exist
       dbCache = {
         products: [],
@@ -28,10 +33,12 @@ const getDb = async () => {
       }
       // Save default data
       fs.writeFileSync(DB_PATH, JSON.stringify(dbCache, null, 2))
+      console.log('Default database created')
     }
     return dbCache
   } catch (error) {
     console.error('Database error:', error)
+    console.error('Error stack:', error.stack)
     return {
       products: [],
       categories: [],
@@ -47,10 +54,21 @@ const getDb = async () => {
 
 const writeDb = async (data) => {
   try {
+    console.log('Writing database to:', DB_PATH)
     dbCache = data
+    
+    // Ensure directory exists
+    const dir = path.dirname(DB_PATH)
+    if (!fs.existsSync(dir)) {
+      console.log('Creating directory:', dir)
+      fs.mkdirSync(dir, { recursive: true })
+    }
+    
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2))
+    console.log('Database written successfully')
   } catch (error) {
     console.error('Write database error:', error)
+    console.error('Error stack:', error.stack)
     throw error
   }
 }
@@ -148,33 +166,55 @@ exports.handler = async (event, context) => {
     
     // POST new product
     if (httpMethod === 'POST') {
-      const body = JSON.parse(event.body)
-      const { name, price, originalPrice, image, rating, reviews, badge, category, description, size, stock } = body
-      
-      if (!name || price == null) {
-        return apiResponse({ success: false, message: 'Name and price required' }, 400)
+      try {
+        console.log('POST request received')
+        
+        if (!event.body) {
+          return apiResponse({ success: false, message: 'Request body is empty' }, 400)
+        }
+        
+        const body = JSON.parse(event.body)
+        console.log('Parsed body:', body)
+        
+        const { name, price, originalPrice, image, rating, reviews, badge, category, description, size, stock } = body
+        
+        if (!name || price == null) {
+          return apiResponse({ success: false, message: 'Name and price required' }, 400)
+        }
+        
+        const product = {
+          id: generateId(),
+          name,
+          price: Number(price),
+          originalPrice: originalPrice ? Number(originalPrice) : undefined,
+          image: image || '/api/placeholder/300/300',
+          rating: rating ?? 0,
+          reviews: reviews ?? 0,
+          badge: badge || '',
+          category: category || 'Uncategorized',
+          description: description || '',
+          size: size || '',
+          stock: stock ?? 100
+        }
+        
+        console.log('Created product:', product)
+        
+        db.products.push(product)
+        await writeDb(db)
+        clearCache()
+        
+        console.log('Product saved successfully')
+        return apiResponse({ success: true, data: product }, 201)
+        
+      } catch (parseError) {
+        console.error('POST request error:', parseError)
+        console.error('Error stack:', parseError.stack)
+        return apiResponse({ 
+          success: false, 
+          message: 'Failed to process request',
+          error: parseError.message 
+        }, 500)
       }
-      
-      const product = {
-        id: generateId(),
-        name,
-        price: Number(price),
-        originalPrice: originalPrice ? Number(originalPrice) : undefined,
-        image: image || '/api/placeholder/300/300',
-        rating: rating ?? 0,
-        reviews: reviews ?? 0,
-        badge: badge || '',
-        category: category || 'Uncategorized',
-        description: description || '',
-        size: size || '',
-        stock: stock ?? 100
-      }
-      
-      db.products.push(product)
-      await writeDb(db)
-      clearCache()
-      
-      return apiResponse({ success: true, data: product }, 201)
     }
     
     // PUT update product
