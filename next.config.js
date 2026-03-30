@@ -34,10 +34,28 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
     unoptimized: true,
   },
   trailingSlash: false,
+  // Production-specific configuration
+  ...(process.env.NODE_ENV === 'production' && {
+    // Ensure API routes work properly on Netlify
+    async rewrites() {
+      return [
+        {
+          source: '/api/:path*',
+          destination: '/api/:path*',
+        },
+      ]
+    },
+  }),
 };
 
 module.exports = nextConfig;

@@ -211,24 +211,49 @@ export default function DashboardProductsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // Client-side validation
+    if (!form.name.trim()) {
+      alert('Product name is required')
+      return
+    }
+    
+    if (!form.price || parseFloat(form.price) <= 0) {
+      alert('Valid price is required')
+      return
+    }
+    
+    if (!form.category) {
+      alert('Category is required')
+      return
+    }
+    
+    if (!form.stock || parseInt(form.stock) < 0) {
+      alert('Valid stock quantity is required')
+      return
+    }
+    
+    let response;
+    let result;
+    
     try {
       const productData: Product = {
         id: editingProduct?.id || Date.now().toString(),
-        name: form.name || 'Test Product',
-        price: parseFloat(form.price) || 1000,
+        name: form.name.trim(),
+        price: parseFloat(form.price),
         originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : undefined,
-        category: form.subcategory ? `${form.category} > ${form.subcategory}` : (form.category || 'Uncategorized'),
-        description: form.description || '',
-        stock: parseInt(form.stock) || 10,
+        category: form.subcategory ? `${form.category} > ${form.subcategory}` : form.category,
+        description: form.description?.trim() || '',
+        stock: parseInt(form.stock),
         featured: form.featured,
-        badge: form.badge || '',
+        badge: form.badge?.trim() || '',
         image: form.image || 'https://example.com/product.jpg'
       }
       
-      let response;
+      console.log('Submitting product data:', productData)
       
       if (editingProduct) {
         // Update existing product
+        console.log('Updating product with ID:', editingProduct.id)
         response = await fetch(`/api/products?id=${editingProduct.id}`, {
           method: 'PUT',
           headers: {
@@ -238,6 +263,7 @@ export default function DashboardProductsPage() {
         })
       } else {
         // Create new product
+        console.log('Creating new product')
         response = await fetch('/api/products', {
           method: 'POST',
           headers: {
@@ -247,7 +273,18 @@ export default function DashboardProductsPage() {
         })
       }
       
-      const result = await response.json()
+      // Check if response is OK and is JSON
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text()
+        throw new Error(`Expected JSON response, got: ${text.substring(0, 100)}...`)
+      }
+      
+      result = await response.json()
       
       if (result.success) {
         // Refresh products list
@@ -261,6 +298,15 @@ export default function DashboardProductsPage() {
       
     } catch (error: any) {
       console.error('Failed to save product:', error)
+      console.error('Response status:', response?.status)
+      if (response) {
+        try {
+          const responseText = await response.text()
+          console.error('Response text:', responseText.substring(0, 200))
+        } catch (e) {
+          console.error('Could not read response text')
+        }
+      }
       alert('Error: ' + (error?.message || 'Failed to save product'))
     }
   }

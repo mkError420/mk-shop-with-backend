@@ -49,6 +49,19 @@
       ],
       "mainCategory": "Electronics",
       "subcategory": "Smartphones & Accessories"
+    },
+    {
+      "id": "mncnbdoxqk9vptza60o",
+      "name": "Test Product",
+      "price": 1000,
+      "image": "/api/placeholder/300/300",
+      "rating": 0,
+      "reviews": 0,
+      "badge": "",
+      "category": "Test",
+      "description": "",
+      "size": "",
+      "stock": 10
     }
   ],
   "categories": [

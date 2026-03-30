@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "netlify-build": "npm run build",
+    "netlify-dev": "netlify dev"
   },
   "dependencies": {
     "@glidejs/glide": "^3.7.1",
