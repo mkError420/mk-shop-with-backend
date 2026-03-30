@@ -55,8 +55,11 @@ export default function DashboardLoginPage() {
       const result = await signInWithEmailAndPassword(auth, email, password)
       console.log('Login successful:', result.user.email)
       
-      router.push('/dashboard')
-      router.refresh()
+      // Add a small delay to ensure auth state is updated
+      setTimeout(() => {
+        console.log('Redirecting to dashboard...')
+        router.push('/dashboard')
+      }, 500)
     } catch (err: any) {
       console.error('Login error:', err)
       setError(err.message || 'Login failed')

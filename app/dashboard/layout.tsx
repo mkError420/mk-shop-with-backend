@@ -36,8 +36,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           } else {
             setUser(null)
             setLoading(false)
+            // Only redirect if not already on login page
             if (pathname !== '/dashboard/login') {
-              console.log('Redirecting to login...')
+              console.log('No user found, redirecting to login...')
               router.push('/dashboard/login')
             }
           }
@@ -56,6 +57,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (unsubscribe) unsubscribe()
     }
   }, [router, pathname])
+
+  // Add a timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('Auth check timeout, setting loading to false')
+        setLoading(false)
+        setAuthError('Authentication check timed out. Please refresh the page.')
+      }
+    }, 5000) // 5 second timeout
+
+    return () => clearTimeout(timeout)
+  }, [loading])
 
   const handleLogout = async () => {
     if (auth) await signOut(auth)
