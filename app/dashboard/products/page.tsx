@@ -22,133 +22,7 @@ interface Product {
 }
 
 export default function DashboardProductsPage() {
-  // Load products from localStorage on initial load
-  const [products, setProducts] = useState<Product[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedProducts = localStorage.getItem('dashboardProducts')
-        if (savedProducts) {
-          const parsed = JSON.parse(savedProducts)
-          console.log('Loaded products from localStorage:', parsed.length, 'items')
-          return parsed
-        }
-      } catch (error) {
-        console.error('Failed to load saved products:', error)
-        // Clear corrupted data
-        localStorage.removeItem('dashboardProducts')
-      }
-    }
-    
-    // Default products if no saved data
-    return [
-      {
-        id: 'mmbhx4773czywi13506',
-        name: 'iPhone 13',
-        price: 150000,
-        originalPrice: 155000,
-        image: 'https://www.custommacbd.com/cdn/shop/products/iphone-13-pink-Custom-Mac-BD.jpg?v=1634647421',
-        rating: 4.5,
-        reviews: 128,
-        badge: 'Best Seller',
-        category: 'Electronics',
-        description: 'Latest iPhone 13 with advanced features',
-        stock: 25,
-        featured: true
-      },
-      {
-        id: 'mmbkna9rmijocw75jf8',
-        name: 'Smart Watch',
-        price: 15000,
-        originalPrice: 16990,
-        image: 'https://img.drz.lazcdn.com/static/bd/p/b506a3a49007f3df27f2d222b190ecb6.jpg_720x720q80.jpg',
-        rating: 4.3,
-        reviews: 89,
-        category: 'Electronics',
-        description: 'Advanced smartwatch with health tracking',
-        stock: 50,
-        featured: true
-      },
-      {
-        id: 'mmbks35eofpgkeemdu',
-        name: 'Lenovo Laptop',
-        price: 76500,
-        originalPrice: 77300,
-        image: 'https://p4-ofp.static.pub/fes/cms/2023/08/23/983kt3002y3un5m318o1coqa0o7hxl595568.png',
-        rating: 4.7,
-        reviews: 45,
-        badge: 'New',
-        category: 'Electronics',
-        description: 'ThinkPad L13 2-in-1 Gen 5 (13" Intel)',
-        stock: 15,
-        featured: false
-      },
-      {
-        id: 'mmbkt5y9wzj1u8x2h7k',
-        name: 'Wireless Earbuds',
-        price: 3500,
-        image: 'https://images.unsplash.com/photo-1590659080609-987e84a626e3?w=400&q=80',
-        rating: 4.2,
-        reviews: 234,
-        category: 'Electronics',
-        description: 'Premium wireless earbuds with noise cancellation',
-        stock: 100,
-        featured: false
-      },
-      {
-        id: 'mmbpq8r2t3k4l5m6n7o',
-        name: 'Tablet Pro',
-        price: 45000,
-        originalPrice: 49990,
-        image: 'https://images.unsplash.com/photo-1544244015-4f36-2ec6-4fb0-26ab5d0a26a?w=400&q=80',
-        rating: 4.6,
-        reviews: 67,
-        badge: 'Limited',
-        category: 'Electronics',
-        description: 'Professional tablet for work and entertainment',
-        stock: 8,
-        featured: true
-      },
-      {
-        id: 'mmbqr3s4t5u6v7w8x9y',
-        name: 'Men\'s T-Shirt',
-        price: 1200,
-        image: 'https://images.unsplash.com/photo-1521572165945-114c23d98d4a?w=400&q=80',
-        rating: 4.1,
-        reviews: 156,
-        category: 'Fashion',
-        description: 'Comfortable cotton t-shirt',
-        stock: 75,
-        featured: false
-      },
-      {
-        id: 'mmbst6u7v8w9x0y1z2a',
-        name: 'Women\'s Handbag',
-        price: 3500,
-        originalPrice: 4200,
-        image: 'https://images.unsplash.com/photo-1553063075-8bd7042f3161?w=400&q=80',
-        rating: 4.4,
-        reviews: 89,
-        badge: 'Sale',
-        category: 'Fashion',
-        description: 'Stylish leather handbag',
-        stock: 30,
-        featured: false
-      },
-      {
-        id: 'mmbuv8w9x0y1z2a3b4c',
-        name: 'Office Chair',
-        price: 8500,
-        image: 'https://images.unsplash.com/photo-1586023498357-8e21cf2f3dfe?w=400&q=80',
-        rating: 4.3,
-        reviews: 45,
-        category: 'Home & Garden',
-        description: 'Ergonomic office chair',
-        stock: 20,
-        featured: false
-      }
-    ]
-  })
-  
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -254,25 +128,6 @@ export default function DashboardProductsPage() {
     }
   }, [form.category])
 
-  // Save products to localStorage whenever they change
-  const saveProducts = (updatedProducts: Product[]) => {
-    console.log('Saving products to localStorage...')
-    try {
-      setProducts(updatedProducts)
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('dashboardProducts', JSON.stringify(updatedProducts))
-        console.log('Products saved successfully to localStorage')
-        
-        // Verify it was saved
-        const saved = localStorage.getItem('dashboardProducts')
-        console.log('Verification - saved products:', saved ? JSON.parse(saved) : 'null')
-      }
-    } catch (error) {
-      console.error('Error saving products to localStorage:', error)
-      throw error
-    }
-  }
-
   // Calculate statistics
   const calculateStats = () => {
     const totalProducts = products.length
@@ -311,24 +166,52 @@ export default function DashboardProductsPage() {
     { name: 'Out of Stock', value: stats.outOfStock, color: '#ef4444' }
   ]
 
-  // Category distribution
-  const categoryDistribution = [
-    { name: 'Electronics', value: products.filter(p => p.category === 'Electronics').length, color: '#3b82f6' },
-    { name: 'Fashion', value: products.filter(p => p.category === 'Fashion').length, color: '#8b5cf6' },
-    { name: 'Home & Garden', value: products.filter(p => p.category === 'Home & Garden').length, color: '#10b981' }
-  ]
+  // Category distribution - dynamic based on actual products
+  const categoryDistribution = React.useMemo(() => {
+    const categoryCount: { [key: string]: number } = {}
+    products.forEach(product => {
+      const category = product.category || 'Uncategorized'
+      categoryCount[category] = (categoryCount[category] || 0) + 1
+    })
+    
+    const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4']
+    return Object.entries(categoryCount).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    }))
+  }, [products])
+
+  // Fetch products from API
+  const fetchProducts = async () => {
+    try {
+      console.log('Fetching products from API...')
+      const response = await fetch('/api/products')
+      const result = await response.json()
+      
+      if (result.success && result.data) {
+        console.log('Products fetched successfully:', result.data.length, 'items')
+        setProducts(result.data)
+      } else {
+        console.error('Failed to fetch products:', result)
+        setProducts([])
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setLoading(false), 1000)
+    fetchProducts()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
-      alert('Starting product save process...')
-      
       const productData: Product = {
         id: editingProduct?.id || Date.now().toString(),
         name: form.name || 'Test Product',
@@ -342,72 +225,43 @@ export default function DashboardProductsPage() {
         image: form.image || 'https://example.com/product.jpg'
       }
       
-      alert('Product data created: ' + JSON.stringify(productData, null, 2))
-      
-      let updatedProducts: Product[]
+      let response;
       
       if (editingProduct) {
         // Update existing product
-        updatedProducts = products.map(product => 
-          product.id === editingProduct.id 
-            ? { ...product, ...productData }
-            : product
-        )
+        response = await fetch(`/api/products?id=${editingProduct.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(productData),
+        })
       } else {
         // Create new product
-        updatedProducts = [...products, productData]
+        response = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(productData),
+        })
       }
       
-      alert('Products array updated, saving to localStorage...')
+      const result = await response.json()
       
-      // Save to localStorage and update state
-      setProducts(updatedProducts)
-      if (typeof window !== 'undefined') {
-        // Create a lightweight version without images to save storage space
-        const lightweightProducts = updatedProducts.map(product => ({
-          ...product,
-          image: product.image && !product.image.startsWith('data:') ? product.image : 'https://example.com/product.jpg'
-        }))
-        
-        localStorage.setItem('dashboardProducts', JSON.stringify(lightweightProducts))
-        alert('Products saved to localStorage successfully!')
+      if (result.success) {
+        // Refresh products list
+        await fetchProducts()
+        resetForm()
+        setShowForm(false)
+        alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
+      } else {
+        alert('Error: ' + (result.message || 'Failed to save product'))
       }
-      
-      resetForm()
-      setShowForm(false)
-      
-      // Show success message
-      alert(editingProduct ? 'Product updated successfully!' : 'Product added successfully!')
       
     } catch (error: any) {
-      if (error.message && error.message.includes('quota')) {
-        alert('Storage quota exceeded! Clearing old data and trying again...')
-        // Clear localStorage and try again
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('dashboardProducts')
-          // Retry with minimal data
-          const minimalProduct = {
-            id: editingProduct?.id || Date.now().toString(),
-            name: form.name || 'Test Product',
-            price: parseFloat(form.price) || 1000,
-            category: form.category || 'Uncategorized',
-            stock: parseInt(form.stock) || 10,
-            image: 'https://example.com/product.jpg'
-          }
-          const minimalProducts = editingProduct 
-            ? products.map(p => p.id === editingProduct.id ? minimalProduct : p)
-            : [...products, minimalProduct]
-          
-          setProducts(minimalProducts)
-          localStorage.setItem('dashboardProducts', JSON.stringify(minimalProducts))
-          alert('Product saved with minimal data!')
-          resetForm()
-          setShowForm(false)
-        }
-      } else {
-        alert('Error details: ' + (error?.message || 'Unknown error'))
-      }
       console.error('Failed to save product:', error)
+      alert('Error: ' + (error?.message || 'Failed to save product'))
     }
   }
 
@@ -446,16 +300,26 @@ export default function DashboardProductsPage() {
     setShowForm(true)
   }
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"? This action cannot be undone.`)) return
     
     try {
-      const updatedProducts = products.filter(product => product.id !== id)
-      saveProducts(updatedProducts)
-      alert('Product deleted successfully!')
+      const response = await fetch(`/api/products?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        // Refresh products list
+        await fetchProducts()
+        alert('Product deleted successfully!')
+      } else {
+        alert('Error: ' + (result.message || 'Failed to delete product'))
+      }
     } catch (error) {
       console.error('Failed to delete product:', error)
-      alert('Failed to delete product. Please try again.')
+      alert('Error: Failed to delete product. Please try again.')
     }
   }
 
@@ -465,17 +329,33 @@ export default function DashboardProductsPage() {
     
     setUpdatingStock(productId)
     try {
-      const updatedProducts = products.map(product => 
-        product.id === productId 
-          ? { ...product, stock }
-          : product
-      )
-      saveProducts(updatedProducts)
-      setStockUpdates(prev => ({ ...prev, [productId]: '' }))
-      alert('Stock updated successfully!')
+      const product = products.find(p => p.id === productId)
+      if (!product) return
+      
+      const response = await fetch(`/api/products?id=${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...product,
+          stock
+        }),
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        // Refresh products list
+        await fetchProducts()
+        setStockUpdates(prev => ({ ...prev, [productId]: '' }))
+        alert('Stock updated successfully!')
+      } else {
+        alert('Error: ' + (result.message || 'Failed to update stock'))
+      }
     } catch (error) {
       console.error('Failed to update stock:', error)
-      alert('Failed to update stock. Please try again.')
+      alert('Error: Failed to update stock. Please try again.')
     } finally {
       setUpdatingStock(null)
     }
@@ -508,6 +388,12 @@ export default function DashboardProductsPage() {
     return { status: 'high', color: 'green', icon: TrendingUp, label: 'In Stock', bgColor: 'bg-green-100', textColor: 'text-green-700' }
   }
 
+  // Get unique categories from products for filter
+  const uniqueCategories = React.useMemo(() => {
+    const categories = new Set(products.map(p => p.category || 'Uncategorized'))
+    return Array.from(categories)
+  }, [products])
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -533,12 +419,26 @@ export default function DashboardProductsPage() {
             ))}
           </div>
         </div>
+        <div className="text-center text-gray-500 mt-4">
+          Loading products from database...
+        </div>
       </div>
     )
   }
 
   return (
     <div>
+      {/* Debug Info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-yellow-800">
+            Debug: Loaded {products.length} products from database | 
+            Filtered: {filteredProducts.length} | 
+            Categories: {uniqueCategories.join(', ')}
+          </p>
+        </div>
+      )}
+      
       {/* Dashboard Diagram Section */}
       <div className="mb-8">
         {/* Header */}
@@ -722,8 +622,8 @@ export default function DashboardProductsPage() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-shop_dark_green"
           >
             <option value="all">All Categories</option>
-            {mainCategories.map(category => (
-              <option key={category.id} value={category.title}>{category.title}</option>
+            {uniqueCategories.map(category => (
+              <option key={category} value={category}>{category}</option>
             ))}
           </select>
           <button
