@@ -55,11 +55,15 @@ export default function DashboardLoginPage() {
       const result = await signInWithEmailAndPassword(auth, email, password)
       console.log('Login successful:', result.user.email)
       
-      // Add a small delay to ensure auth state is updated
+      // Clear any previous auth state
+      setUser(null)
+      
+      // Wait for auth state to update, then redirect
       setTimeout(() => {
-        console.log('Redirecting to dashboard...')
-        router.push('/dashboard')
-      }, 500)
+        console.log('Redirecting to success page...')
+        window.location.href = '/login-success' // Redirect to success page first
+      }, 1000) // Increased delay to 1 second
+      
     } catch (err: any) {
       console.error('Login error:', err)
       setError(err.message || 'Login failed')

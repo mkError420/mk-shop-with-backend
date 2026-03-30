@@ -15,6 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
     const checkAuth = () => {
@@ -29,10 +30,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         console.log('Setting up auth state listener...')
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
           console.log('Auth state changed:', firebaseUser?.email)
+          setAuthChecked(true)
           if (firebaseUser) {
             setUser({ email: firebaseUser.email || '' })
             setLoading(false)
             setAuthError(null)
+            console.log('User authenticated successfully:', firebaseUser.email)
           } else {
             setUser(null)
             setLoading(false)
@@ -71,9 +74,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => clearTimeout(timeout)
   }, [loading])
 
+  // Add additional check for user state
+  useEffect(() => {
+    if (!loading && authChecked && !user && pathname !== '/dashboard/login') {
+      console.log('User not authenticated after auth check, redirecting...')
+      router.push('/dashboard/login')
+    }
+  }, [loading, authChecked, user, pathname, router])
+
   const handleLogout = async () => {
-    if (auth) await signOut(auth)
-    router.push('/dashboard/login')
+    try {
+      console.log('Logging out...')
+      if (auth) {
+        await signOut(auth)
+        console.log('Firebase sign out successful')
+      }
+      // Clear any local storage/session data
+      localStorage.clear()
+      sessionStorage.clear()
+      // Force redirect to login
+      router.push('/dashboard/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Still redirect even if logout fails
+      router.push('/dashboard/login')
+    }
   }
 
   const nav = [
@@ -159,6 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">{user?.email}</span>
             <a href="/auth-debug" className="text-xs text-blue-600 hover:text-blue-700">Debug</a>
+            <a href="/logout-test" className="text-xs text-orange-600 hover:text-orange-700">Test Logout</a>
           </div>
         </header>
         <div className="p-6">{children}</div>
