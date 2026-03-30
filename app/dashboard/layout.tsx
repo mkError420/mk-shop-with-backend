@@ -14,30 +14,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<{ email: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!auth) {
-      console.warn('Firebase auth not initialized')
-      setLoading(false)
-      if (pathname !== '/dashboard/login') {
-        router.push('/dashboard/login')
-      }
-      return
-    }
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({ email: firebaseUser.email || '' })
-        setLoading(false)
-      } else {
-        setUser(null)
-        setLoading(false)
-        if (pathname !== '/dashboard/login') {
-          router.push('/dashboard/login')
+    const checkAuth = () => {
+      try {
+        if (!auth) {
+          console.warn('Firebase auth not initialized')
+          setAuthError('Firebase authentication not available')
+          setLoading(false)
+          return
         }
+        
+        console.log('Setting up auth state listener...')
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+          console.log('Auth state changed:', firebaseUser?.email)
+          if (firebaseUser) {
+            setUser({ email: firebaseUser.email || '' })
+            setLoading(false)
+            setAuthError(null)
+          } else {
+            setUser(null)
+            setLoading(false)
+            if (pathname !== '/dashboard/login') {
+              console.log('Redirecting to login...')
+              router.push('/dashboard/login')
+            }
+          }
+        })
+        
+        return unsubscribe
+      } catch (error: any) {
+        console.error('Auth setup error:', error)
+        setAuthError(error.message)
+        setLoading(false)
       }
-    })
+    }
     
-    return () => unsubscribe()
+    const unsubscribe = checkAuth()
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
   }, [router, pathname])
 
   const handleLogout = async () => {
@@ -57,7 +74,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]
 
   if (pathname === '/dashboard/login') return <>{children}</>
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full" /></div>
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+            <h2 className="text-red-800 font-semibold mb-2">Authentication Error</h2>
+            <p className="text-red-600 mb-4">{authError}</p>
+            <div className="space-y-2">
+              <button 
+                onClick={() => window.location.reload()} 
+                className="w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              >
+                Refresh Page
+              </button>
+              <a 
+                href="/dashboard/login" 
+                className="block w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-center"
+              >
+                Go to Login
+              </a>
+              <a 
+                href="/auth-debug" 
+                className="block w-full bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-center"
+              >
+                Debug Authentication
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -82,7 +142,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 overflow-auto">
         <header className="bg-white shadow px-6 py-4 flex justify-between items-center">
           <h1 className="text-xl font-semibold text-gray-800">Admin Dashboard</h1>
-          <span className="text-sm text-gray-500">{user?.email}</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">{user?.email}</span>
+            <a href="/auth-debug" className="text-xs text-blue-600 hover:text-blue-700">Debug</a>
+          </div>
         </header>
         <div className="p-6">{children}</div>
       </main>

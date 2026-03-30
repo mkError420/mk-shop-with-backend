@@ -60,6 +60,11 @@ export const auth = new Proxy({}, {
   get(target, prop) {
     if (!authInstance) {
       initializeFirebase()
+      // If still not initialized after trying, return null
+      if (!authInstance) {
+        console.warn('Firebase auth not available after initialization attempt')
+        return null
+      }
     }
     return authInstance?.[prop]
   },
@@ -75,6 +80,11 @@ export const db = new Proxy({}, {
   get(target, prop) {
     if (!dbInstance) {
       initializeFirebase()
+      // If still not initialized after trying, return null
+      if (!dbInstance) {
+        console.warn('Firebase db not available after initialization attempt')
+        return null
+      }
     }
     return dbInstance?.[prop]
   },
