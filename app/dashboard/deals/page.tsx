@@ -40,7 +40,14 @@ export default function DashboardDealsPage() {
       setDeals(dealsData)
     } catch (err) {
       console.error('Error fetching deals:', err)
-      setError(`Failed to load deals: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      // Fallback to localStorage
+      const localDeals = JSON.parse(localStorage.getItem('dashboardDeals') || '[]')
+      if (localDeals.length > 0) {
+        console.log('Using localStorage fallback:', localDeals.length, 'deals')
+        setDeals(localDeals)
+      } else {
+        setError(`Failed to load deals: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -53,8 +60,16 @@ export default function DashboardDealsPage() {
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}"? This action cannot be undone.`)) return
     try {
-      await api.deals.delete(id)
-      await fetchDeals() // Refresh the list
+      const result = await api.deals.delete(id)
+      
+      // Remove from localStorage for persistence
+      const existingDeals = JSON.parse(localStorage.getItem('dashboardDeals') || '[]')
+      const updatedDeals = existingDeals.filter((d: any) => d.id !== id)
+      localStorage.setItem('dashboardDeals', JSON.stringify(updatedDeals))
+      
+      // Refresh the list
+      await fetchDeals()
+      alert('Deal deleted successfully!')
     } catch (error) {
       console.error('Error deleting deal:', error)
       alert('Failed to delete deal. Please try again.')
