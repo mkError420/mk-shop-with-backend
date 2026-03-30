@@ -110,6 +110,9 @@ exports.handler = async (event, context) => {
       const search = queryStringParameters?.search
       const featured = queryStringParameters?.featured
       
+      console.log('GET request - Category:', category, 'Search:', search, 'Featured:', featured)
+      console.log('Available products:', products.length)
+      
       // Apply filters (same logic as original API)
       if (category && category !== 'all') {
         const categorySlugToTitleMap = {}
@@ -176,7 +179,12 @@ exports.handler = async (event, context) => {
     
     // PUT update product
     if (httpMethod === 'PUT') {
-      const id = pathParameters?.id || event.queryStringParameters?.id
+      // Handle both path parameters and query string parameters
+      const id = pathParameters?.id || 
+                 event.queryStringParameters?.id ||
+                 (event.queryStringParameters && event.queryStringParameters.id)
+      
+      console.log('PUT request - ID:', id, 'Path params:', pathParameters, 'Query params:', event.queryStringParameters)
       
       if (!id) {
         return apiResponse({ success: false, message: 'Product ID required' }, 400)
@@ -218,7 +226,12 @@ exports.handler = async (event, context) => {
     
     // DELETE product
     if (httpMethod === 'DELETE') {
-      const id = pathParameters?.id || event.queryStringParameters?.id
+      // Handle both path parameters and query string parameters
+      const id = pathParameters?.id || 
+                 event.queryStringParameters?.id ||
+                 (event.queryStringParameters && event.queryStringParameters.id)
+      
+      console.log('DELETE request - ID:', id, 'Path params:', pathParameters, 'Query params:', event.queryStringParameters)
       
       if (!id) {
         return apiResponse({ success: false, message: 'Product ID required' }, 400)
