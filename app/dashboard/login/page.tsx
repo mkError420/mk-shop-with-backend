@@ -15,17 +15,31 @@ export default function DashboardLoginPage() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    if (!auth) {
-      console.warn('Firebase auth not initialized')
-      return
-    }
-    const unsubscribe = onAuthStateChanged(auth, (user: any) => {
-      if (user) {
-        setUser(user)
-        router.push('/dashboard')
+    const checkAuth = () => {
+      try {
+        if (!auth) {
+          console.warn('Firebase auth not available')
+          setError('Firebase authentication not configured properly')
+          return
+        }
+        
+        const unsubscribe = onAuthStateChanged(auth, (user: any) => {
+          if (user) {
+            setUser(user)
+            router.push('/dashboard')
+          }
+        })
+        return unsubscribe
+      } catch (error) {
+        console.error('Auth setup error:', error)
+        setError('Authentication setup failed')
       }
-    })
-    return unsubscribe
+    }
+    
+    const unsubscribe = checkAuth()
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,12 +48,17 @@ export default function DashboardLoginPage() {
     setLoading(true)
     try {
       if (!auth) {
-        throw new Error('Firebase auth not initialized')
+        throw new Error('Firebase authentication not available')
       }
-      await signInWithEmailAndPassword(auth, email, password)
+      
+      console.log('Attempting login with:', email)
+      const result = await signInWithEmailAndPassword(auth, email, password)
+      console.log('Login successful:', result.user.email)
+      
       router.push('/dashboard')
       router.refresh()
     } catch (err: any) {
+      console.error('Login error:', err)
       setError(err.message || 'Login failed')
     } finally {
       setLoading(false)
