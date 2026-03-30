@@ -83,41 +83,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [loading, authChecked, user, pathname, router])
 
   const handleLogout = async () => {
+    console.log('=== LOGOUT STARTED ===')
+    
     try {
-      console.log('Logging out...')
+      // Step 1: Clear local storage immediately
+      console.log('Step 1: Clearing browser storage...')
+      localStorage.clear()
+      sessionStorage.clear()
       
-      // Try multiple logout methods
-      let logoutSuccessful = false
+      // Step 2: Clear user state
+      console.log('Step 2: Clearing user state...')
+      setUser(null)
       
+      // Step 3: Try Firebase logout
+      console.log('Step 3: Attempting Firebase logout...')
       if (auth) {
         try {
           await signOut(auth)
-          console.log('Firebase sign out successful')
-          logoutSuccessful = true
+          console.log('✅ Firebase logout successful')
         } catch (firebaseError) {
-          console.warn('Firebase sign out failed:', firebaseError)
+          console.warn('⚠️ Firebase logout failed:', firebaseError)
         }
+      } else {
+        console.warn('⚠️ Firebase auth not available')
       }
       
-      // Clear browser storage regardless of Firebase logout
-      localStorage.clear()
-      sessionStorage.clear()
-      
-      // Clear user state
-      setUser(null)
-      
-      // Force redirect to login
-      console.log('Redirecting to login...')
-      router.push('/dashboard/login')
-      router.refresh()
+      // Step 4: Force redirect
+      console.log('Step 4: Redirecting to login...')
+      setTimeout(() => {
+        window.location.href = '/dashboard/login'
+      }, 500)
       
     } catch (error) {
-      console.error('Logout error:', error)
-      // Still clear everything and redirect even if logout fails
+      console.error('❌ Logout error:', error)
+      // Fallback: still clear everything and redirect
       localStorage.clear()
       sessionStorage.clear()
       setUser(null)
-      router.push('/dashboard/login')
+      window.location.href = '/dashboard/login'
     }
   }
 
