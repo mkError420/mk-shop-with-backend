@@ -182,7 +182,7 @@ export default function DashboardProductsPage() {
     }))
   }, [products])
 
-  // Fetch products from API
+  // Fetch products from API and localStorage
   const fetchProducts = async () => {
     try {
       console.log('Fetching products from API...')
@@ -194,11 +194,15 @@ export default function DashboardProductsPage() {
         setProducts(result.data)
       } else {
         console.error('Failed to fetch products:', result)
-        setProducts([])
+        // Fallback to localStorage
+        const localProducts = JSON.parse(localStorage.getItem('dashboardProducts') || '[]')
+        setProducts(localProducts)
       }
     } catch (error) {
       console.error('Error fetching products:', error)
-      setProducts([])
+      // Fallback to localStorage
+      const localProducts = JSON.parse(localStorage.getItem('dashboardProducts') || '[]')
+      setProducts(localProducts)
     } finally {
       setLoading(false)
     }
@@ -287,6 +291,13 @@ export default function DashboardProductsPage() {
       result = await response.json()
       
       if (result.success) {
+        // Save to localStorage for persistence
+        const existingProducts = JSON.parse(localStorage.getItem('dashboardProducts') || '[]')
+        const updatedProducts = editingProduct 
+          ? existingProducts.map((p: Product) => p.id === result.data.id ? result.data : p)
+          : [...existingProducts, result.data]
+        localStorage.setItem('dashboardProducts', JSON.stringify(updatedProducts))
+        
         // Refresh products list
         await fetchProducts()
         resetForm()
