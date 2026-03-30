@@ -24,7 +24,7 @@ export default function DashboardLayoutFixed({ children }: { children: React.Rea
       return
     }
 
-    const checkAuth = async () => {
+    const checkAuth = (): (() => void) | undefined => {
       try {
         if (!auth) {
           console.warn('Firebase auth not initialized')
