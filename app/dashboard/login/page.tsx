@@ -60,8 +60,8 @@ export default function DashboardLoginPage() {
       
       // Wait for auth state to update, then redirect
       setTimeout(() => {
-        console.log('Redirecting to success page...')
-        window.location.href = '/login-success' // Redirect to success page first
+        console.log('Redirecting to dashboard...')
+        window.location.href = '/dashboard' // Direct redirect to dashboard
       }, 1000) // Increased delay to 1 second
       
     } catch (err: any) {
