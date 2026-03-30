@@ -203,8 +203,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <h1 className="text-xl font-semibold text-gray-800">Admin Dashboard</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">{user?.email}</span>
-            <a href="/auth-debug" className="text-xs text-blue-600 hover:text-blue-700">Debug</a>
-            <a href="/logout-test" className="text-xs text-orange-600 hover:text-orange-700">Test Logout</a>
           </div>
         </header>
         <div className="p-6">{children}</div>
