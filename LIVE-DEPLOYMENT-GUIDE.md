@@ -67,7 +67,7 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
 FIREBASE_ADMIN_TYPE=service_account
 FIREBASE_ADMIN_PROJECT_ID=your_project_id
 FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Private_Key_Here\n-----END PRIVATE KEY-----\n"
-FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your_project_id.iam.gserviceaccount.com
+FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-fbsvc@mk-shop-ecommerce.iam.gserviceaccount.com
 ```
 
 ## Step 4: Netlify Deployment
