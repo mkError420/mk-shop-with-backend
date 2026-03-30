@@ -5,10 +5,35 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Simple API redirect for Next.js
+# API routes - redirect to specific functions
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/products"
+  to = "/.netlify/functions/api-products"
+  status = 200
+
+[[redirects]]
+  from = "/api/products/*"
+  to = "/.netlify/functions/api-products"
+  status = 200
+
+[[redirects]]
+  from = "/api/categories"
+  to = "/.netlify/functions/api-categories"
+  status = 200
+
+[[redirects]]
+  from = "/api/categories/*"
+  to = "/.netlify/functions/api-categories"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/api-auth-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/*"
+  to = "/.netlify/functions/api-auth-login"
   status = 200
 
 # SPA fallback
